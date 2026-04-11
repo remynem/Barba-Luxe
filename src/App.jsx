@@ -94,6 +94,11 @@ const CONFIG = {
     cartBadge: true,          // badge compteur sur le bouton panier
     productViewToggle: true,  // carousel 2 vues par produit
   },
+
+  // ── Paiement Stripe ───────────────────────────────────────────────────────
+  // En production Vite : utiliser import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  // Ne jamais mettre la SECRET key ici — elle reste dans /api/create-payment-intent.js
+  stripePublishableKey: "pk_test_REMPLACE_PAR_TA_CLE",
 };
 
 // ─── CONFIG CONTEXT ───────────────────────────────────────────────────────────
@@ -1146,22 +1151,41 @@ function validatePayment(card, lang) {
 }
 
 // CHECKOUT — Stripe Payment Element (Bancontact + Carte + wallets)
-// Dépendances : @stripe/react-stripe-js @stripe/stripe-js
-// npm install @stripe/react-stripe-js @stripe/stripe-js
+// Dans le vrai projet Vite, Stripe.js est chargé via :
+//   npm install @stripe/stripe-js
+//   import { loadStripe } from "@stripe/stripe-js"
+//   const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+//
+// Ici on utilise le CDN Stripe (window.Stripe) + la clé en CONFIG.stripeKey
 
-// ─── Import Stripe (lazy — ne charge que sur la page checkout) ─────────────
-let stripePromise = null;
-function getStripe() {
-  if (!stripePromise) {
-    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
-    if (key) {
-      // Chargement dynamique pour éviter d'alourdir le bundle initial
-      stripePromise = import("@stripe/stripe-js").then(({ loadStripe }) =>
-        loadStripe(key)
-      );
+// ─── Charge Stripe.js via CDN si pas encore chargé ─────────────────────────
+function loadStripeScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Stripe) return resolve(window.Stripe);
+    const existing = document.getElementById("stripe-js");
+    if (existing) {
+      existing.addEventListener("load", () => resolve(window.Stripe));
+      return;
     }
-  }
-  return stripePromise;
+    const script = document.createElement("script");
+    script.id = "stripe-js";
+    script.src = "https://js.stripe.com/v3/";
+    script.async = true;
+    script.onload = () => resolve(window.Stripe);
+    script.onerror = () => reject(new Error("Stripe.js failed to load"));
+    document.head.appendChild(script);
+  });
+}
+
+let stripeInstance = null;
+async function getStripe() {
+  if (stripeInstance) return stripeInstance;
+  // En production Vite : remplace par import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  const key = CONFIG.stripePublishableKey;
+  if (!key || key === "pk_test_REMPLACE_PAR_TA_CLE") return null;
+  const StripeConstructor = await loadStripeScript();
+  stripeInstance = StripeConstructor(key);
+  return stripeInstance;
 }
 
 // ─── Formulaire de paiement Stripe ────────────────────────────────────────
