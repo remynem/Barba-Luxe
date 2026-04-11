@@ -95,6 +95,10 @@ const CONFIG = {
     productViewToggle: true,  // carousel 2 vues par produit
   },
 };
+
+// ─── CONFIG CONTEXT ───────────────────────────────────────────────────────────
+const ConfigContext = createContext(null);
+function useConfig() { return useContext(ConfigContext); }
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── TRANSLATIONS ────────────────────────────────────────────────────────────
@@ -193,7 +197,6 @@ const T = {
       orderMsg: "Merci pour votre confiance. Votre commande est en préparation.",
       orderNum: "Commande n°",
       continueShopping: "Continuer mes achats",
-      backToShop: "← Continuer mes achats",
     }
   },
   en: {
@@ -290,16 +293,11 @@ const T = {
       orderMsg: "Thank you for your trust. Your order is being prepared.",
       orderNum: "Order #",
       continueShopping: "Continue shopping",
-      backToShop: "← Continue shopping",
     }
   }
 };
 
 // ─── CONTEXT ─────────────────────────────────────────────────────────────────
-const AppCtx = createContext(null);
-
-function useApp() { return useContext(AppCtx); }
-
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
@@ -328,10 +326,8 @@ const css = `
   /* NAV */
   .bl-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0 5vw;
     display: flex; align-items: center; justify-content: space-between; height: 72px;
-    background: rgba(28,18,9,0.85); backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(201,169,110,0.08);
-    transition: background 0.4s, border-color 0.4s; }
-  .bl-nav.scrolled { background: rgba(28,18,9,0.97); border-color: rgba(201,169,110,0.15); }
+    transition: background 0.4s, backdrop-filter 0.4s; }
+  .bl-nav.scrolled { background: rgba(28,18,9,0.92); backdrop-filter: blur(12px); }
   .bl-logo { font-family: var(--serif); font-size: 22px; letter-spacing: 0.05em; color: var(--gold); font-weight: 500; }
   .bl-logo span { font-style: italic; }
   .bl-nav-links { display: flex; gap: 2rem; align-items: center; }
@@ -359,12 +355,11 @@ const css = `
   .bl-mobile-menu .bl-nav-link { font-size: 28px; text-transform: none; font-family: var(--serif); letter-spacing: 0; opacity: 0.9; }
 
   /* HERO */
-  .bl-hero { position: relative; height: 100vh; min-height: 600px;
-    display: flex; flex-direction: column; justify-content: center;
-    overflow: hidden; padding-top: 72px; }
+  .bl-hero { position: relative; height: 100vh; min-height: 600px; display: flex; align-items: center;
+    overflow: hidden; }
   .bl-hero-bg { position: absolute; inset: 0; background: #1C1209 center/cover; }
   .bl-hero-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(28,18,9,0.88) 0%, rgba(28,18,9,0.4) 60%, rgba(28,18,9,0.7) 100%); }
-  .bl-hero-content { position: relative; z-index: 1; padding: 0 8vw; max-width: 720px; width: 100%; }
+  .bl-hero-content { position: relative; z-index: 1; padding: 0 8vw; max-width: 720px; }
   .bl-hero-tagline { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
     margin-bottom: 2rem; opacity: 0; animation: fadeUp 0.8s 0.2s forwards; }
   .bl-hero-title { font-family: var(--serif); font-size: clamp(42px, 7vw, 84px); line-height: 1.08;
@@ -609,91 +604,20 @@ const css = `
     .bl-story-body { grid-template-columns: 1fr; }
     .bl-story-img-wrap { display: none; }
     .bl-contact-body { grid-template-columns: 1fr; }
+    .bl-checkout-layout { grid-template-columns: 1fr; }
     .bl-footer-grid { grid-template-columns: 1fr; gap: 2rem; }
-
-    /* Checkout mobile — colonne unique, sidebar en bas, scroll libre */
-    .bl-checkout { min-height: auto; padding-top: 72px; overflow-y: auto; }
-    .bl-checkout-inner { padding: 1.5rem 4vw 4rem; }
-    .bl-checkout-layout { grid-template-columns: 1fr; gap: 1.5rem; }
-    .bl-checkout-sidebar { position: static; top: auto; }
-    .bl-checkout-main { padding: 1.25rem; }
-    .bl-checkout-title { font-size: 26px; }
-    .bl-checkout-header { margin-bottom: 1.5rem; }
-
-    /* Progress bar — labels masqués sur mobile, dots seuls */
-    .bl-progress-label { display: none; }
-    .bl-progress-line { max-width: 32px; margin: 0 6px; }
-
-    /* Boutons checkout — colonne seulement sur très petit écran */
-
-    /* Grille card-row (expiry + CVV) — reste en 2 colonnes */
-    .bl-card-row { grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    /* Cart drawer */
-    .bl-cart-drawer { width: 100vw; }
-
-    /* Products grid — 1 colonne */
-    .bl-products-grid { grid-template-columns: 1fr; padding: 2rem 4vw; }
-
-    /* Products header */
-    .bl-products-header { padding: 7rem 4vw 2rem; }
-
-    /* Story header */
-    .bl-story-header { padding: 7rem 4vw 3rem; }
-
-    /* Story quote plus petite */
-    .bl-story-quote { font-size: 18px; padding: 1rem 1.25rem; }
-
-    /* Contact */
-    .bl-contact-header { padding: 7rem 4vw 3rem; }
-    .bl-contact-body { padding: 3rem 4vw 4rem; gap: 3rem; }
-
-    /* Preview grid — 2 colonnes */
-    .bl-preview-grid { grid-template-columns: 1fr 1fr; }
-
-    /* Footer */
-    .bl-footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
   }
-
   @media (max-width: 600px) {
     .bl-reassurance-inner { grid-template-columns: 1fr; }
     .bl-hero-content { padding: 0 6vw; }
-    .bl-hero-title { font-size: clamp(32px, 10vw, 54px); }
     .bl-cart-drawer { width: 100vw; }
-
-    /* Preview grid — 1 colonne sur très petit */
-    .bl-preview-grid { grid-template-columns: 1fr; }
-    .bl-preview-card { padding: 2rem 1.5rem; }
-
-    /* Checkout inner encore plus compact */
-    .bl-checkout-inner { padding: 1rem 4vw 5rem; }
-    .bl-checkout-main { padding: 1rem; }
-
-    /* Boutons checkout en colonne */
-    .bl-checkout-btns { flex-direction: column; gap: 10px; }
-    .bl-btn-back { text-align: center; }
-
-    /* Form grids (prénom/nom) — 1 colonne sur mobile */
-    .bl-ship-name-grid { grid-template-columns: 1fr !important; }
-    .bl-ship-zip-grid { grid-template-columns: 1fr !important; }
-
-    /* Méthodes paiement — wrap naturel */
-    .bl-payment-methods { gap: 6px; }
-    .bl-pay-method { font-size: 11px; padding: 8px 12px; }
-
-    /* Produit footer — stack vertical si trop étroit */
-    .bl-product-footer { flex-wrap: wrap; gap: 12px; }
-    .bl-add-btn { width: 100%; text-align: center; }
-
-    /* Section paddings réduits */
-    .bl-section { padding: 4rem 4vw; }
-    .bl-preview { padding: 3rem 4vw; }
   }
 `;
 
 // ─── COMPONENTS ───────────────────────────────────────────────────────────────
 
 function Nav({ page, setPage, lang, setLang, cartCount, setCartOpen }) {
+  const { config } = useConfig();
   const t = T[lang];
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -721,7 +645,7 @@ function Nav({ page, setPage, lang, setLang, cartCount, setCartOpen }) {
           ))}
         </div>
         <div className="bl-nav-right">
-          {CONFIG.features.langSwitch && <button className="bl-lang-btn" onClick={() => setLang(lang === "fr" ? "en" : "fr")}>{t.lang}</button>}
+          {config.features.langSwitch && <button className="bl-lang-btn" onClick={() => setLang(lang === "fr" ? "en" : "fr")}>{t.lang}</button>}
           <button className="bl-cart-btn" onClick={() => setCartOpen(true)}>
             {t.cart}
             {cartCount > 0 && <span className="bl-cart-count">{cartCount}</span>}
@@ -756,6 +680,7 @@ function useReveal() {
 
 // HOME
 function HomePage({ setPage, lang }) {
+  const { config } = useConfig();
   const t = T[lang];
   useReveal();
 
@@ -799,7 +724,7 @@ function HomePage({ setPage, lang }) {
       </section>
 
       {/* REASSURANCE */}
-      {CONFIG.sections.reassuranceBanner && <div className="bl-reassurance">
+      {config.sections.reassuranceBanner && <div className="bl-reassurance">
         <div className="bl-reassurance-inner">
           {t.reassurance.map((r, i) => (
             <div className="bl-reassurance-item reveal" key={i} style={{ transitionDelay: `${i * 0.08}s` }}>
@@ -819,6 +744,7 @@ function HomePage({ setPage, lang }) {
 
 // PRODUCTS
 function ProductsPage({ lang, addToCart }) {
+  const { config } = useConfig();
   const t = T[lang];
   const [filterId, setFilterId] = useState("all");
   const filter = filterId; // alias kept for compat
@@ -845,7 +771,7 @@ function ProductsPage({ lang, addToCart }) {
         <div className="bl-section-tag">{lang === "fr" ? "Collection" : "Collection"}</div>
         <h1 className="bl-section-title">{t.products.title}</h1>
         <p className="bl-section-sub">{t.products.subtitle}</p>
-        {CONFIG.sections.productFilters && <div className="bl-filters">
+        {config.sections.productFilters && <div className="bl-filters">
           {t.products.filters.map(f => (
             <button key={f.id} className={`bl-filter-btn${filterId === f.id ? " active" : ""}`} onClick={() => setFilterId(f.id)}>{f.label}</button>
           ))}
@@ -860,7 +786,7 @@ function ProductsPage({ lang, addToCart }) {
             <div className="bl-product-img" style={{ position: "relative" }}>
               <img src={item.views ? item.views[vi] : item.img} alt={item.name} style={{ transition: "opacity 0.35s ease" }} />
               <div className="bl-product-badge">{item.type}</div>
-              {CONFIG.features.productViewToggle && item.views && (
+              {config.features.productViewToggle && item.views && (
                 <div style={{ position:"absolute", bottom:"10px", left:"50%", transform:"translateX(-50%)", display:"flex", gap:"6px", alignItems:"center" }}>
                   {item.views.map((_, idx) => (
                     <button key={idx} onClick={() => setView(item.id, idx)} style={{
@@ -1111,6 +1037,7 @@ function validatePayment(card, lang) {
 
 // CHECKOUT
 function CheckoutPage({ lang, cart, setCart, setPage }) {
+  const { config } = useConfig();
   const t = T[lang];
   const [step, setStep] = useState(0);
   const [shipping, setShipping] = useState("standard");
@@ -1220,9 +1147,6 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
                     </div>
                   ))}
                   <div className="bl-checkout-btns">
-                    <button className="bl-btn-back" onClick={() => { setPage("products"); window.scrollTo(0,0); }}>
-                      {t.checkout.backToShop}
-                    </button>
                     <button className="bl-btn-primary" onClick={() => setStep(1)}>{t.checkout.continueShipping} →</button>
                   </div>
                 </>
@@ -1238,7 +1162,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
               <h3 style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--gold-light)", marginBottom: "1.5rem" }}>
                 {lang === "fr" ? "Livraison" : "Shipping"}
               </h3>
-              <div className="bl-ship-name-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div className="bl-form-group">
                   <label className="bl-form-label">{t.checkout.firstName}</label>
                   <input className="bl-form-input" value={shipFields.firstName}
@@ -1261,7 +1185,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
                   style={shipErrors.address ? { borderColor: "#E24B4A" } : {}} />
                 {shipErrors.address && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.address}</div>}
               </div>
-              <div className="bl-ship-zip-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div className="bl-form-group">
                   <label className="bl-form-label">{t.checkout.city}</label>
                   <input className="bl-form-input" value={shipFields.city}
@@ -1318,10 +1242,10 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
               <p className="bl-form-label" style={{ marginBottom: "1rem" }}>{t.checkout.payWith}</p>
               <div className="bl-payment-methods">
                 {[
-                  CONFIG.checkout.paymentMethods.card   && { id: "card",   label: "💳 " + (lang === "fr" ? "Carte bancaire" : "Card") },
-                  CONFIG.checkout.paymentMethods.applePay  && { id: "apple",  label: "⬛ Apple Pay" },
-                  CONFIG.checkout.paymentMethods.googlePay && { id: "google", label: "G  Google Pay" },
-                  CONFIG.checkout.paymentMethods.paypal    && { id: "paypal", label: "P  PayPal" },
+                  config.checkout.paymentMethods.card   && { id: "card",   label: "💳 " + (lang === "fr" ? "Carte bancaire" : "Card") },
+                  config.checkout.paymentMethods.applePay  && { id: "apple",  label: "⬛ Apple Pay" },
+                  config.checkout.paymentMethods.googlePay && { id: "google", label: "G  Google Pay" },
+                  config.checkout.paymentMethods.paypal    && { id: "paypal", label: "P  PayPal" },
                 ].filter(Boolean).map(m => (
                   <div key={m.id} className={`bl-pay-method${payMethod === m.id ? " selected" : ""}`} onClick={() => { setPayMethod(m.id); setCardErrors({}); }}>
                     {m.label}
@@ -1433,21 +1357,13 @@ function Footer({ lang, setPage }) {
   );
 }
 
-// ─── DEV PANEL ── Visible uniquement si CONFIG.features.devPanel = true ───────
+
+// ─── DEV PANEL ── Visible uniquement si config.features.devPanel = true ───────
 function DevPanel({ lang }) {
+  const { config, toggleFlag } = useConfig();
   const [open, setOpen] = useState(false);
-  const [cfg, setCfg] = useState({
-    sections: { ...CONFIG.sections },
-    features: { ...CONFIG.features },
-  });
 
-  // Live-patch CONFIG on toggle so all components react
-  const toggle = (group, key) => {
-    CONFIG[group][key] = !cfg[group][key];
-    setCfg(c => ({ ...c, [group]: { ...c[group], [key]: !c[group][key] } }));
-  };
-
-  if (!CONFIG.features.devPanel) return null;
+  if (!config.features.devPanel) return null;
 
   return (
     <>
@@ -1475,10 +1391,10 @@ function DevPanel({ lang }) {
 
           {/* Sections */}
           <div style={{fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", color:"rgba(247,242,235,0.4)", marginBottom:"0.6rem"}}>Sections</div>
-          {Object.entries(cfg.sections).map(([key, val]) => (
+          {Object.entries(config.sections).map(([key, val]) => (
             <label key={key} style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px", cursor:"pointer"}}>
               <span style={{fontSize:"12px", color:"rgba(247,242,235,0.75)"}}>{key}</span>
-              <div onClick={() => toggle("sections", key)} style={{
+              <div onClick={() => toggleFlag("sections", key)} style={{
                 width:"32px", height:"18px", borderRadius:"9px", cursor:"pointer",
                 background: val ? "#C9A96E" : "rgba(247,242,235,0.15)",
                 position:"relative", transition:"background 0.2s", flexShrink:0,
@@ -1494,10 +1410,10 @@ function DevPanel({ lang }) {
 
           {/* Features */}
           <div style={{fontSize:"10px", letterSpacing:"0.1em", textTransform:"uppercase", color:"rgba(247,242,235,0.4)", margin:"0.75rem 0 0.6rem"}}>Features</div>
-          {Object.entries(cfg.features).filter(([k]) => k !== "devPanel").map(([key, val]) => (
+          {Object.entries(config.features).filter(([k]) => k !== "devPanel").map(([key, val]) => (
             <label key={key} style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px", cursor:"pointer"}}>
               <span style={{fontSize:"12px", color:"rgba(247,242,235,0.75)"}}>{key}</span>
-              <div onClick={() => toggle("features", key)} style={{
+              <div onClick={() => toggleFlag("features", key)} style={{
                 width:"32px", height:"18px", borderRadius:"9px", cursor:"pointer",
                 background: val ? "#C9A96E" : "rgba(247,242,235,0.15)",
                 position:"relative", transition:"background 0.2s", flexShrink:0,
@@ -1528,6 +1444,7 @@ export default function App() {
   const [page, setPage] = useState("home");
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [config, setConfig] = useState(CONFIG);
 
   const addToCart = useCallback((item) => {
     setCart(c => {
@@ -1539,8 +1456,15 @@ export default function App() {
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
+  const toggleFlag = (group, key) => {
+    setConfig(prev => ({
+      ...prev,
+      [group]: { ...prev[group], [key]: !prev[group][key] }
+    }));
+  };
+
   return (
-    <>
+    <ConfigContext.Provider value={{ config, toggleFlag }}>
       <style>{css}</style>
       <div className="bl-app">
         <Nav page={page} setPage={setPage} lang={lang} setLang={setLang} cartCount={cartCount} setCartOpen={setCartOpen} />
@@ -1552,6 +1476,6 @@ export default function App() {
         {page === "checkout" && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} />}
         <DevPanel lang={lang} />
       </div>
-    </>
+    </ConfigContext.Provider>
   );
 }
