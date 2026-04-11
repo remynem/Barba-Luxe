@@ -1145,13 +1145,218 @@ function validatePayment(card, lang) {
   return errs;
 }
 
-// CHECKOUT
+// CHECKOUT — Stripe Payment Element (Bancontact + Carte + wallets)
+// Dépendances : @stripe/react-stripe-js @stripe/stripe-js
+// npm install @stripe/react-stripe-js @stripe/stripe-js
+
+// ─── Import Stripe (lazy — ne charge que sur la page checkout) ─────────────
+let stripePromise = null;
+function getStripe() {
+  if (!stripePromise) {
+    const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+    if (key) {
+      // Chargement dynamique pour éviter d'alourdir le bundle initial
+      stripePromise = import("@stripe/stripe-js").then(({ loadStripe }) =>
+        loadStripe(key)
+      );
+    }
+  }
+  return stripePromise;
+}
+
+// ─── Formulaire de paiement Stripe ────────────────────────────────────────
+function StripePaymentForm({ lang, total, onSuccess, onBack }) {
+  const [stripe, setStripe] = useState(null);
+  const [elements, setElements] = useState(null);
+  const [paying, setPaying] = useState(false);
+  const [stripeError, setStripeError] = useState("");
+  const [payElementReady, setPayElementReady] = useState(false);
+  const containerRef = useRef(null);
+
+  // Charge Stripe.js et monte le PaymentElement
+  useEffect(() => {
+    let mounted = true;
+    async function init() {
+      try {
+        const stripeInstance = await getStripe();
+        if (!mounted || !stripeInstance || !containerRef.current) return;
+
+        const els = stripeInstance.elements({
+          appearance: {
+            theme: "night",
+            variables: {
+              colorPrimary:       "#C9A96E",
+              colorBackground:    "#1C1209",
+              colorText:          "#F7F2EB",
+              colorDanger:        "#E24B4A",
+              fontFamily:         "'DM Sans', system-ui, sans-serif",
+              borderRadius:       "4px",
+              spacingUnit:        "5px",
+            },
+            rules: {
+              ".Input": {
+                border: "1px solid rgba(201,169,110,0.3)",
+                backgroundColor: "rgba(247,242,235,0.05)",
+                color: "#F7F2EB",
+              },
+              ".Input:focus": {
+                border: "1px solid #C9A96E",
+                boxShadow: "0 0 0 2px rgba(201,169,110,0.15)",
+              },
+              ".Label": { color: "rgba(247,242,235,0.6)", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase" },
+              ".Tab": { border: "1px solid rgba(201,169,110,0.2)", backgroundColor: "rgba(247,242,235,0.03)" },
+              ".Tab--selected": { border: "1px solid #C9A96E", backgroundColor: "rgba(201,169,110,0.08)" },
+              ".Tab:hover": { backgroundColor: "rgba(201,169,110,0.05)" },
+            },
+          },
+          // Montant en centimes pour l'affichage dans le PaymentElement
+          amount: Math.round(total * 100),
+          currency: "eur",
+          // Bancontact prioritaire pour la Belgique
+          payment_method_types: ["bancontact", "card"],
+        });
+
+        const paymentEl = els.create("payment", {
+          layout: { type: "tabs", defaultCollapsed: false },
+        });
+
+        paymentEl.mount(containerRef.current);
+        paymentEl.on("ready", () => setPayElementReady(true));
+        paymentEl.on("change", (e) => {
+          if (e.error) setStripeError(e.error.message);
+          else setStripeError("");
+        });
+
+        setStripe(stripeInstance);
+        setElements(els);
+      } catch (err) {
+        console.error("Stripe init error:", err);
+        setStripeError(lang === "fr"
+          ? "Impossible de charger le module de paiement."
+          : "Unable to load payment module.");
+      }
+    }
+    init();
+    return () => { mounted = false; };
+  }, []);
+
+  const handlePay = async () => {
+    if (!stripe || !elements) return;
+    setPaying(true);
+    setStripeError("");
+
+    // Valide les champs Stripe avant de confirmer
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      setStripeError(submitError.message);
+      setPaying(false);
+      return;
+    }
+
+    // Crée le PaymentIntent côté serveur
+    let clientSecret;
+    try {
+      const res = await fetch("/api/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: total, currency: "eur" }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      clientSecret = data.clientSecret;
+    } catch (err) {
+      setStripeError(lang === "fr"
+        ? "Erreur lors de la création du paiement. Veuillez réessayer."
+        : "Error creating payment. Please try again.");
+      setPaying(false);
+      return;
+    }
+
+    // Confirme le paiement (redirect vers Bancontact si nécessaire)
+    const { error } = await stripe.confirmPayment({
+      elements,
+      clientSecret,
+      confirmParams: {
+        // Page de retour après autorisation Bancontact
+        return_url: `${window.location.origin}/?payment=success`,
+      },
+      // Si paiement par carte → pas de redirect, confirmation inline
+      redirect: "if_required",
+    });
+
+    if (error) {
+      setStripeError(error.message);
+      setPaying(false);
+    } else {
+      // Paiement par carte confirmé sans redirect
+      onSuccess();
+    }
+  };
+
+  return (
+    <div>
+      {/* Container monté par Stripe.js */}
+      <div
+        ref={containerRef}
+        style={{ minHeight: 200, opacity: payElementReady ? 1 : 0, transition: "opacity 0.3s" }}
+      />
+
+      {/* Skeleton pendant le chargement */}
+      {!payElementReady && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+          {[1,2,3].map(i => (
+            <div key={i} style={{
+              height: i === 1 ? 44 : 44, borderRadius: 4,
+              background: "rgba(247,242,235,0.05)",
+              border: "1px solid rgba(201,169,110,0.15)",
+              animation: "pulse 1.5s ease-in-out infinite",
+            }} />
+          ))}
+        </div>
+      )}
+
+      {stripeError && (
+        <div style={{
+          marginTop: "1rem", padding: "0.75rem 1rem",
+          background: "rgba(226,75,74,0.1)", border: "1px solid rgba(226,75,74,0.3)",
+          borderRadius: 4, color: "#E24B4A", fontSize: 13,
+        }}>
+          ⚠ {stripeError}
+        </div>
+      )}
+
+      <div className="bl-checkout-btns" style={{ marginTop: "1.5rem" }}>
+        <button className="bl-btn-back" onClick={onBack} disabled={paying}>
+          {lang === "fr" ? "← Retour" : "← Back"}
+        </button>
+        <button
+          className="bl-btn-primary"
+          onClick={handlePay}
+          disabled={!payElementReady || paying}
+          style={{ opacity: (!payElementReady || paying) ? 0.6 : 1 }}
+        >
+          {paying
+            ? (lang === "fr" ? "Traitement…" : "Processing…")
+            : (lang === "fr" ? `Payer ${total.toFixed(2)} €` : `Pay ${total.toFixed(2)} €`)}
+        </button>
+      </div>
+
+      <div style={{ marginTop: "1rem", display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+        <span style={{ fontSize: 11, color: "rgba(247,242,235,0.3)", letterSpacing: "0.05em" }}>
+          🔒 {lang === "fr" ? "Paiement sécurisé par" : "Secured by"}
+        </span>
+        <span style={{ fontSize: 12, color: "rgba(247,242,235,0.4)", fontWeight: 500 }}>Stripe</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── CheckoutPage principal ────────────────────────────────────────────────
 function CheckoutPage({ lang, cart, setCart, setPage }) {
   const { config } = useConfig();
   const t = T[lang];
   const [step, setStep] = useState(0);
   const [shipping, setShipping] = useState("standard");
-  const [payMethod, setPayMethod] = useState("card");
   const [ordered, setOrdered] = useState(false);
   const [orderNum] = useState(() => Math.floor(Math.random() * 90000 + 10000));
 
@@ -1159,18 +1364,21 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
   const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", address: "", city: "", zip: "", country: "" });
   const [shipErrors, setShipErrors] = useState({});
 
-  // Payment card state
-  const [card, setCard] = useState({ name: "", number: "", expiry: "", cvv: "" });
-  const [cardErrors, setCardErrors] = useState({});
-
-  const formatCardNumber = (v) => v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
-  const formatExpiry = (v) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length >= 3 ? d.slice(0, 2) + "/" + d.slice(2) : d; };
-
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const shippingCost = shipping === "express" ? 8.9 : 0;
   const total = subtotal + shippingCost;
 
   const stepStatus = (i) => i < step ? "done" : i === step ? "active" : "pending";
+
+  // Vérifie si on revient d'un redirect Bancontact (return_url)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setOrdered(true);
+      // Nettoie l'URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   if (ordered) {
     return (
@@ -1232,6 +1440,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
           </div>
         </div>
 
+        {/* ── Étape 0 : Récapitulatif ─────────────────────────────────── */}
         {step === 0 && (
           <div className="bl-checkout-layout">
             <div className="bl-checkout-main">
@@ -1240,8 +1449,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
               </h3>
               {cart.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "2rem", color: "rgba(247,242,235,0.4)" }}>
-                  {t.checkout.empty}
-                  <br /><br />
+                  {t.checkout.empty}<br /><br />
                   <button className="bl-btn-primary" style={{ maxWidth: 200 }} onClick={() => { setPage("products"); window.scrollTo(0,0); }}>{t.checkout.browse}</button>
                 </div>
               ) : (
@@ -1266,6 +1474,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
           </div>
         )}
 
+        {/* ── Étape 1 : Livraison ─────────────────────────────────────── */}
         {step === 1 && (
           <div className="bl-checkout-layout">
             <div className="bl-checkout-main">
@@ -1273,51 +1482,45 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
                 {lang === "fr" ? "Livraison" : "Shipping"}
               </h3>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div className="bl-form-group">
-                  <label className="bl-form-label">{t.checkout.firstName}</label>
-                  <input className="bl-form-input" value={shipFields.firstName}
-                    onChange={e => { setShipFields(f => ({...f, firstName: e.target.value})); setShipErrors(er => ({...er, firstName: undefined})); }}
-                    style={shipErrors.firstName ? { borderColor: "#E24B4A" } : {}} />
-                  {shipErrors.firstName && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.firstName}</div>}
-                </div>
-                <div className="bl-form-group">
-                  <label className="bl-form-label">{t.checkout.lastName}</label>
-                  <input className="bl-form-input" value={shipFields.lastName}
-                    onChange={e => { setShipFields(f => ({...f, lastName: e.target.value})); setShipErrors(er => ({...er, lastName: undefined})); }}
-                    style={shipErrors.lastName ? { borderColor: "#E24B4A" } : {}} />
-                  {shipErrors.lastName && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.lastName}</div>}
-                </div>
+                {["firstName", "lastName"].map(field => (
+                  <div className="bl-form-group" key={field}>
+                    <label className="bl-form-label">{t.checkout[field]}</label>
+                    <input className="bl-form-input" value={shipFields[field]}
+                      onChange={e => { setShipFields(f => ({...f, [field]: e.target.value})); setShipErrors(er => ({...er, [field]: undefined})); }}
+                      style={shipErrors[field] ? { borderColor: "#E24B4A" } : {}} />
+                    {shipErrors[field] && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors[field]}</div>}
+                  </div>
+                ))}
               </div>
-              <div className="bl-form-group">
-                <label className="bl-form-label">{t.checkout.address}</label>
-                <input className="bl-form-input" value={shipFields.address}
-                  onChange={e => { setShipFields(f => ({...f, address: e.target.value})); setShipErrors(er => ({...er, address: undefined})); }}
-                  style={shipErrors.address ? { borderColor: "#E24B4A" } : {}} />
-                {shipErrors.address && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.address}</div>}
-              </div>
+              {["address"].map(field => (
+                <div className="bl-form-group" key={field}>
+                  <label className="bl-form-label">{t.checkout[field]}</label>
+                  <input className="bl-form-input" value={shipFields[field]}
+                    onChange={e => { setShipFields(f => ({...f, [field]: e.target.value})); setShipErrors(er => ({...er, [field]: undefined})); }}
+                    style={shipErrors[field] ? { borderColor: "#E24B4A" } : {}} />
+                  {shipErrors[field] && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors[field]}</div>}
+                </div>
+              ))}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div className="bl-form-group">
-                  <label className="bl-form-label">{t.checkout.city}</label>
-                  <input className="bl-form-input" value={shipFields.city}
-                    onChange={e => { setShipFields(f => ({...f, city: e.target.value})); setShipErrors(er => ({...er, city: undefined})); }}
-                    style={shipErrors.city ? { borderColor: "#E24B4A" } : {}} />
-                  {shipErrors.city && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.city}</div>}
-                </div>
-                <div className="bl-form-group">
-                  <label className="bl-form-label">{t.checkout.zip}</label>
-                  <input className="bl-form-input" value={shipFields.zip}
-                    onChange={e => { setShipFields(f => ({...f, zip: e.target.value})); setShipErrors(er => ({...er, zip: undefined})); }}
-                    style={shipErrors.zip ? { borderColor: "#E24B4A" } : {}} />
-                  {shipErrors.zip && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.zip}</div>}
-                </div>
+                {["city", "zip"].map(field => (
+                  <div className="bl-form-group" key={field}>
+                    <label className="bl-form-label">{t.checkout[field]}</label>
+                    <input className="bl-form-input" value={shipFields[field]}
+                      onChange={e => { setShipFields(f => ({...f, [field]: e.target.value})); setShipErrors(er => ({...er, [field]: undefined})); }}
+                      style={shipErrors[field] ? { borderColor: "#E24B4A" } : {}} />
+                    {shipErrors[field] && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors[field]}</div>}
+                  </div>
+                ))}
               </div>
-              <div className="bl-form-group">
-                <label className="bl-form-label">{t.checkout.country}</label>
-                <input className="bl-form-input" value={shipFields.country}
-                  onChange={e => { setShipFields(f => ({...f, country: e.target.value})); setShipErrors(er => ({...er, country: undefined})); }}
-                  style={shipErrors.country ? { borderColor: "#E24B4A" } : {}} />
-                {shipErrors.country && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.country}</div>}
-              </div>
+              {["country"].map(field => (
+                <div className="bl-form-group" key={field}>
+                  <label className="bl-form-label">{t.checkout[field]}</label>
+                  <input className="bl-form-input" value={shipFields[field]}
+                    onChange={e => { setShipFields(f => ({...f, [field]: e.target.value})); setShipErrors(er => ({...er, [field]: undefined})); }}
+                    style={shipErrors[field] ? { borderColor: "#E24B4A" } : {}} />
+                  {shipErrors[field] && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors[field]}</div>}
+                </div>
+              ))}
               <div style={{ marginTop: "1.5rem" }}>
                 <label className="bl-form-label" style={{ marginBottom: "1rem", display: "block" }}>
                   {lang === "fr" ? "Mode de livraison" : "Shipping method"}
@@ -1343,87 +1546,26 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
           </div>
         )}
 
+        {/* ── Étape 2 : Paiement Stripe ───────────────────────────────── */}
         {step === 2 && (
           <div className="bl-checkout-layout">
             <div className="bl-checkout-main">
-              <h3 style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--gold-light)", marginBottom: "1.5rem" }}>
+              <h3 style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--gold-light)", marginBottom: "0.5rem" }}>
                 {lang === "fr" ? "Paiement" : "Payment"}
               </h3>
-              <p className="bl-form-label" style={{ marginBottom: "1rem" }}>{t.checkout.payWith}</p>
-              <div className="bl-payment-methods">
-                {[
-                  config.checkout.paymentMethods.card   && { id: "card",   label: "💳 " + (lang === "fr" ? "Carte bancaire" : "Card") },
-                  config.checkout.paymentMethods.applePay  && { id: "apple",  label: "⬛ Apple Pay" },
-                  config.checkout.paymentMethods.googlePay && { id: "google", label: "G  Google Pay" },
-                  config.checkout.paymentMethods.paypal    && { id: "paypal", label: "P  PayPal" },
-                ].filter(Boolean).map(m => (
-                  <div key={m.id} className={`bl-pay-method${payMethod === m.id ? " selected" : ""}`} onClick={() => { setPayMethod(m.id); setCardErrors({}); }}>
-                    {m.label}
-                  </div>
-                ))}
-              </div>
+              <p style={{ fontSize: 13, color: "rgba(247,242,235,0.45)", marginBottom: "1.5rem" }}>
+                {lang === "fr"
+                  ? "Choisissez votre méthode de paiement ci-dessous."
+                  : "Choose your payment method below."}
+              </p>
 
-              {payMethod === "card" && (
-                <>
-                  <div className="bl-form-group">
-                    <label className="bl-form-label">{t.checkout.cardName}</label>
-                    <input className="bl-form-input"
-                      placeholder={lang === "fr" ? "Maxime Devos" : "John Smith"}
-                      value={card.name} inputMode="text"
-                      onChange={e => { setCard(c => ({...c, name: e.target.value})); setCardErrors(er => ({...er, name: undefined})); }}
-                      style={cardErrors.name ? { borderColor: "#E24B4A" } : {}} />
-                    {cardErrors.name && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {cardErrors.name}</div>}
-                  </div>
-                  <div className="bl-form-group">
-                    <label className="bl-form-label">{t.checkout.cardNumber}</label>
-                    <input className="bl-form-input"
-                      placeholder="•••• •••• •••• ••••" maxLength={19} inputMode="numeric"
-                      value={card.number}
-                      onChange={e => { setCard(c => ({...c, number: formatCardNumber(e.target.value)})); setCardErrors(er => ({...er, number: undefined})); }}
-                      style={cardErrors.number ? { borderColor: "#E24B4A" } : {}} />
-                    {cardErrors.number && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {cardErrors.number}</div>}
-                  </div>
-                  <div className="bl-card-row">
-                    <div className="bl-form-group">
-                      <label className="bl-form-label">{t.checkout.expiry}</label>
-                      <input className="bl-form-input"
-                        placeholder={t.checkout.expiry} maxLength={5} inputMode="numeric"
-                        value={card.expiry}
-                        onChange={e => { setCard(c => ({...c, expiry: formatExpiry(e.target.value)})); setCardErrors(er => ({...er, expiry: undefined})); }}
-                        style={cardErrors.expiry ? { borderColor: "#E24B4A" } : {}} />
-                      {cardErrors.expiry && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {cardErrors.expiry}</div>}
-                    </div>
-                    <div className="bl-form-group">
-                      <label className="bl-form-label">{t.checkout.cvv}</label>
-                      <input className="bl-form-input"
-                        placeholder="•••" maxLength={3} inputMode="numeric"
-                        value={card.cvv}
-                        onChange={e => { setCard(c => ({...c, cvv: e.target.value.replace(/\D/g,"")})); setCardErrors(er => ({...er, cvv: undefined})); }}
-                        style={cardErrors.cvv ? { borderColor: "#E24B4A" } : {}} />
-                      {cardErrors.cvv && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {cardErrors.cvv}</div>}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {(payMethod === "apple" || payMethod === "google" || payMethod === "paypal") && (
-                <div style={{ padding: "2rem", textAlign: "center", border: "1px solid rgba(201,169,110,0.15)", borderRadius: 2, color: "rgba(247,242,235,0.5)", fontSize: 14, lineHeight: 1.6 }}>
-                  {lang === "fr"
-                    ? "Vous serez redirigé vers le service de paiement sécurisé."
-                    : "You'll be redirected to the secure payment service."}
-                </div>
-              )}
-
-              <div className="bl-checkout-btns">
-                <button className="bl-btn-back" onClick={() => setStep(1)}>{t.checkout.backShipping}</button>
-                <button className="bl-btn-primary" onClick={() => {
-                  if (payMethod === "card") {
-                    const errs = validatePayment(card, lang);
-                    if (Object.keys(errs).length > 0) { setCardErrors(errs); return; }
-                  }
-                  setOrdered(true);
-                }}>{t.checkout.payNow} — {total.toFixed(2)} €</button>
-              </div>
+              {/* Stripe PaymentElement — affiche Bancontact + Carte automatiquement */}
+              <StripePaymentForm
+                lang={lang}
+                total={total}
+                onSuccess={() => { setOrdered(true); setCart([]); }}
+                onBack={() => setStep(1)}
+              />
             </div>
             <Sidebar />
           </div>
@@ -1432,6 +1574,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
     </div>
   );
 }
+
 
 // FOOTER
 function Footer({ lang, setPage }) {
