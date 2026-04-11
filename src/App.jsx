@@ -98,7 +98,7 @@ const CONFIG = {
   // ── Paiement Stripe ───────────────────────────────────────────────────────
   // En production Vite : utiliser import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   // Ne jamais mettre la SECRET key ici — elle reste dans /api/create-payment-intent.js
-  stripePublishableKey: "pk_test_REMPLACE_PAR_TA_CLE",
+  stripePublishableKey: "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU",
 };
 
 // ─── CONFIG CONTEXT ───────────────────────────────────────────────────────────
@@ -1182,94 +1182,138 @@ async function getStripe() {
   if (stripeInstance) return stripeInstance;
   // En production Vite : remplace par import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   const key = CONFIG.stripePublishableKey;
-  if (!key || key === "pk_test_REMPLACE_PAR_TA_CLE") return null;
+  if (!key || key === "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") return null;
   const StripeConstructor = await loadStripeScript();
   stripeInstance = StripeConstructor(key);
   return stripeInstance;
 }
 
 // ─── Formulaire de paiement Stripe ────────────────────────────────────────
-function StripePaymentForm({ lang, total, onSuccess, onBack }) {
+function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
   const [stripe, setStripe] = useState(null);
   const [elements, setElements] = useState(null);
+  const [clientSecret, setClientSecret] = useState("");
   const [paying, setPaying] = useState(false);
   const [stripeError, setStripeError] = useState("");
   const [payElementReady, setPayElementReady] = useState(false);
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef(null);
 
-  // Charge Stripe.js et monte le PaymentElement
+  const appearance = {
+    theme: "night",
+    variables: {
+      colorPrimary:    "#C9A96E",
+      colorBackground: "#1C1209",
+      colorText:       "#F7F2EB",
+      colorDanger:     "#E24B4A",
+      fontFamily:      "'DM Sans', system-ui, sans-serif",
+      borderRadius:    "4px",
+      spacingUnit:     "5px",
+    },
+    rules: {
+      ".Input": {
+        border: "1px solid rgba(201,169,110,0.3)",
+        backgroundColor: "rgba(247,242,235,0.05)",
+        color: "#F7F2EB",
+      },
+      ".Input:focus": {
+        border: "1px solid #C9A96E",
+        boxShadow: "0 0 0 2px rgba(201,169,110,0.15)",
+      },
+      ".Label": {
+        color: "rgba(247,242,235,0.6)",
+        fontSize: "11px",
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+      },
+      ".Tab": {
+        border: "1px solid rgba(201,169,110,0.2)",
+        backgroundColor: "rgba(247,242,235,0.03)",
+        color: "rgba(247,242,235,0.6)",
+      },
+      ".Tab--selected": {
+        border: "1px solid #C9A96E",
+        backgroundColor: "rgba(201,169,110,0.08)",
+        color: "#F7F2EB",
+      },
+      ".Tab:hover": { backgroundColor: "rgba(201,169,110,0.05)" },
+    },
+  };
+
+  // Étape 1 — Au montage : créer le PaymentIntent et récupérer le clientSecret
   useEffect(() => {
     let mounted = true;
-    async function init() {
+    async function createIntent() {
+      try {
+        const res = await fetch("/api/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: total,
+            currency: "eur",
+            cart: (cart || []).map(i => ({ id: i.id, name: i.name, qty: i.qty })),
+          }),
+        });
+        const data = await res.json();
+        if (!mounted) return;
+        if (data.error) throw new Error(data.error);
+        setClientSecret(data.clientSecret);
+      } catch (err) {
+        if (!mounted) return;
+        setStripeError(lang === "fr"
+          ? "Impossible d'initialiser le paiement. Vérifiez votre connexion."
+          : "Unable to initialize payment. Check your connection.");
+        setLoading(false);
+      }
+    }
+    createIntent();
+    return () => { mounted = false; };
+  }, [total]);
+
+  // Étape 2 — Dès qu'on a le clientSecret : charger Stripe et monter le PaymentElement
+  useEffect(() => {
+    if (!clientSecret || !containerRef.current) return;
+    let mounted = true;
+
+    async function mountElement() {
       try {
         const stripeInstance = await getStripe();
-        if (!mounted || !stripeInstance || !containerRef.current) return;
+        if (!mounted || !stripeInstance) return;
 
-        const els = stripeInstance.elements({
-          appearance: {
-            theme: "night",
-            variables: {
-              colorPrimary:       "#C9A96E",
-              colorBackground:    "#1C1209",
-              colorText:          "#F7F2EB",
-              colorDanger:        "#E24B4A",
-              fontFamily:         "'DM Sans', system-ui, sans-serif",
-              borderRadius:       "4px",
-              spacingUnit:        "5px",
-            },
-            rules: {
-              ".Input": {
-                border: "1px solid rgba(201,169,110,0.3)",
-                backgroundColor: "rgba(247,242,235,0.05)",
-                color: "#F7F2EB",
-              },
-              ".Input:focus": {
-                border: "1px solid #C9A96E",
-                boxShadow: "0 0 0 2px rgba(201,169,110,0.15)",
-              },
-              ".Label": { color: "rgba(247,242,235,0.6)", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase" },
-              ".Tab": { border: "1px solid rgba(201,169,110,0.2)", backgroundColor: "rgba(247,242,235,0.03)" },
-              ".Tab--selected": { border: "1px solid #C9A96E", backgroundColor: "rgba(201,169,110,0.08)" },
-              ".Tab:hover": { backgroundColor: "rgba(201,169,110,0.05)" },
-            },
-          },
-          // Montant en centimes pour l'affichage dans le PaymentElement
-          amount: Math.round(total * 100),
-          currency: "eur",
-          // Bancontact prioritaire pour la Belgique
-          payment_method_types: ["bancontact", "card"],
-        });
-
+        // Le clientSecret EST OBLIGATOIRE pour que PaymentElement s'affiche
+        const els = stripeInstance.elements({ appearance, clientSecret });
         const paymentEl = els.create("payment", {
           layout: { type: "tabs", defaultCollapsed: false },
         });
 
         paymentEl.mount(containerRef.current);
-        paymentEl.on("ready", () => setPayElementReady(true));
+        paymentEl.on("ready", () => { setPayElementReady(true); setLoading(false); });
         paymentEl.on("change", (e) => {
-          if (e.error) setStripeError(e.error.message);
-          else setStripeError("");
+          setStripeError(e.error ? e.error.message : "");
         });
 
         setStripe(stripeInstance);
         setElements(els);
       } catch (err) {
-        console.error("Stripe init error:", err);
+        if (!mounted) return;
+        console.error("Stripe mount error:", err);
         setStripeError(lang === "fr"
           ? "Impossible de charger le module de paiement."
           : "Unable to load payment module.");
+        setLoading(false);
       }
     }
-    init();
+    mountElement();
     return () => { mounted = false; };
-  }, []);
+  }, [clientSecret]);
 
+  // Étape 3 — Paiement : valider + confirmer
   const handlePay = async () => {
     if (!stripe || !elements) return;
     setPaying(true);
     setStripeError("");
 
-    // Valide les champs Stripe avant de confirmer
+    // Valide les champs du PaymentElement avant de confirmer
     const { error: submitError } = await elements.submit();
     if (submitError) {
       setStripeError(submitError.message);
@@ -1277,73 +1321,59 @@ function StripePaymentForm({ lang, total, onSuccess, onBack }) {
       return;
     }
 
-    // Crée le PaymentIntent côté serveur
-    let clientSecret;
-    try {
-      const res = await fetch("/api/create-payment-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total, currency: "eur" }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      clientSecret = data.clientSecret;
-    } catch (err) {
-      setStripeError(lang === "fr"
-        ? "Erreur lors de la création du paiement. Veuillez réessayer."
-        : "Error creating payment. Please try again.");
-      setPaying(false);
-      return;
-    }
-
-    // Confirme le paiement (redirect vers Bancontact si nécessaire)
+    // Confirme le paiement — redirect vers Bancontact si nécessaire
     const { error } = await stripe.confirmPayment({
       elements,
       clientSecret,
       confirmParams: {
-        // Page de retour après autorisation Bancontact
         return_url: `${window.location.origin}/?payment=success`,
       },
-      // Si paiement par carte → pas de redirect, confirmation inline
-      redirect: "if_required",
+      redirect: "if_required", // Carte = pas de redirect, Bancontact = redirect
     });
 
     if (error) {
       setStripeError(error.message);
       setPaying(false);
     } else {
-      // Paiement par carte confirmé sans redirect
+      // Carte confirmée inline (sans redirect)
       onSuccess();
     }
   };
 
   return (
     <div>
-      {/* Container monté par Stripe.js */}
-      <div
-        ref={containerRef}
-        style={{ minHeight: 200, opacity: payElementReady ? 1 : 0, transition: "opacity 0.3s" }}
-      />
-
-      {/* Skeleton pendant le chargement */}
-      {!payElementReady && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-          {[1,2,3].map(i => (
+      {/* État de chargement — création du PaymentIntent en cours */}
+      {loading && !stripeError && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 8 }}>
+          <div style={{ fontSize: 13, color: "rgba(247,242,235,0.4)", marginBottom: 4 }}>
+            {lang === "fr" ? "Initialisation du paiement…" : "Initializing payment…"}
+          </div>
+          {[1, 2, 3].map(i => (
             <div key={i} style={{
-              height: i === 1 ? 44 : 44, borderRadius: 4,
+              height: 44, borderRadius: 4,
               background: "rgba(247,242,235,0.05)",
-              border: "1px solid rgba(201,169,110,0.15)",
-              animation: "pulse 1.5s ease-in-out infinite",
+              border: "1px solid rgba(201,169,110,0.12)",
             }} />
           ))}
         </div>
       )}
 
+      {/* Container Stripe — caché pendant le chargement, visible dès que prêt */}
+      <div
+        ref={containerRef}
+        style={{
+          opacity: payElementReady ? 1 : 0,
+          transition: "opacity 0.4s ease",
+          minHeight: payElementReady ? 0 : 200,
+        }}
+      />
+
+      {/* Erreur */}
       {stripeError && (
         <div style={{
           marginTop: "1rem", padding: "0.75rem 1rem",
           background: "rgba(226,75,74,0.1)", border: "1px solid rgba(226,75,74,0.3)",
-          borderRadius: 4, color: "#E24B4A", fontSize: 13,
+          borderRadius: 4, color: "#E24B4A", fontSize: 13, lineHeight: 1.5,
         }}>
           ⚠ {stripeError}
         </div>
@@ -1587,6 +1617,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
               <StripePaymentForm
                 lang={lang}
                 total={total}
+                cart={cart}
                 onSuccess={() => { setOrdered(true); setCart([]); }}
                 onBack={() => setStep(1)}
               />
