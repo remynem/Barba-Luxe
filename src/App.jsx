@@ -638,7 +638,10 @@ function Nav({ page, setPage, lang, setLang, cartCount, setCartOpen }) {
           <span style={{fontSize:"9px", letterSpacing:"0.2em", color:"var(--mid)", fontFamily:"var(--sans)", fontWeight:400, textTransform:"uppercase", marginTop:"2px"}}>by ISH</span>
         </div>
         <div className="bl-nav-links">
-          {["home", "products", "story", "contact"].map(p => (
+          {["home", "products", "story", "contact"].filter(p => {
+            const sectionMap = { home: "home", products: "products", story: "story", contact: "contact" };
+            return config.sections[sectionMap[p]] !== false;
+          }).map(p => (
             <span key={p} className={`bl-nav-link${page === p ? " active" : ""}`} onClick={() => nav(p)} style={{ cursor: "pointer" }}>
               {t.nav[p]}
             </span>
@@ -646,30 +649,42 @@ function Nav({ page, setPage, lang, setLang, cartCount, setCartOpen }) {
         </div>
         <div className="bl-nav-right">
           {config.features.langSwitch && <button className="bl-lang-btn" onClick={() => setLang(lang === "fr" ? "en" : "fr")}>{t.lang}</button>}
-          <button className="bl-cart-btn" onClick={() => setCartOpen(true)}>
-            {t.cart}
-            {cartCount > 0 && <span className="bl-cart-count">{cartCount}</span>}
-          </button>
+          {config.sections.cartDrawer && (
+            <button className="bl-cart-btn" onClick={() => setCartOpen(true)}>
+              {t.cart}
+              {config.features.cartBadge && cartCount > 0 && <span className="bl-cart-count">{cartCount}</span>}
+            </button>
+          )}
           <button className="bl-hamburger" onClick={() => setMenuOpen(!menuOpen)}>
             <span /><span /><span />
           </button>
         </div>
       </nav>
       <div className={`bl-mobile-menu${menuOpen ? " open" : ""}`}>
-        {["home", "products", "story", "contact"].map(p => (
+        {["home", "products", "story", "contact"].filter(p => {
+          return config.sections[p] !== false;
+        }).map(p => (
           <span key={p} className="bl-nav-link" onClick={() => nav(p)} style={{ cursor: "pointer" }}>
             {t.nav[p]}
           </span>
         ))}
-        <button className="bl-lang-btn" onClick={() => { setLang(lang === "fr" ? "en" : "fr"); setMenuOpen(false); }}>{t.lang}</button>
+        {config.features.langSwitch && (
+          <button className="bl-lang-btn" onClick={() => { setLang(lang === "fr" ? "en" : "fr"); setMenuOpen(false); }}>{t.lang}</button>
+        )}
       </div>
     </>
   );
 }
 
 function useReveal() {
+  const { config } = useConfig();
   useEffect(() => {
+    // If scrollReveal is disabled, make all reveal elements immediately visible
     const els = document.querySelectorAll(".reveal");
+    if (!config.features.scrollReveal) {
+      els.forEach(el => el.classList.add("visible"));
+      return;
+    }
     const obs = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } });
     }, { threshold: 0.12 });
@@ -705,23 +720,29 @@ function HomePage({ setPage, lang }) {
       </section>
 
       {/* PREVIEW CARDS */}
-      <section className="bl-preview">
-        <div className="bl-preview-grid">
-          {Object.entries(t.preview).map(([key, val], i) => {
-            const pages = { products: "products", story: "story", values: "story", contact: "contact" };
-            return (
-              <div className="bl-preview-card reveal" key={key} style={{ transitionDelay: `${i * 0.1}s` }}>
-                <div className="bl-preview-num">0{i + 1}</div>
-                <h3 className="bl-preview-title">{val.title}</h3>
-                <p className="bl-preview-desc">{val.desc}</p>
-                <span className="bl-preview-link" onClick={() => { setPage(pages[key]); window.scrollTo(0,0); }} style={{ cursor: "pointer" }}>
-                  {val.link} →
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      {config.sections.previewCards && (
+        <section className="bl-preview">
+          <div className="bl-preview-grid">
+            {Object.entries(t.preview).filter(([key]) => {
+              const pageMap = { products: "products", story: "story", values: "story", contact: "contact" };
+              const targetPage = pageMap[key];
+              return !targetPage || config.sections[targetPage] !== false;
+            }).map(([key, val], i) => {
+              const pages = { products: "products", story: "story", values: "story", contact: "contact" };
+              return (
+                <div className="bl-preview-card reveal" key={key} style={{ transitionDelay: `${i * 0.1}s` }}>
+                  <div className="bl-preview-num">0{i + 1}</div>
+                  <h3 className="bl-preview-title">{val.title}</h3>
+                  <p className="bl-preview-desc">{val.desc}</p>
+                  <span className="bl-preview-link" onClick={() => { setPage(pages[key]); window.scrollTo(0,0); }} style={{ cursor: "pointer" }}>
+                    {val.link} →
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* REASSURANCE */}
       {config.sections.reassuranceBanner && <div className="bl-reassurance">
@@ -822,6 +843,7 @@ function ProductsPage({ lang, addToCart }) {
 
 // STORY
 function StoryPage({ lang, setPage }) {
+  const { config } = useConfig();
   const t = T[lang];
   useReveal();
   return (
@@ -853,15 +875,17 @@ function StoryPage({ lang, setPage }) {
         </div>
       </div>
 
-      <div className="bl-values-grid">
-        {t.story.values.map((v, i) => (
-          <div className="bl-value-card reveal" key={i} style={{ transitionDelay: `${i * 0.1}s` }}>
-            <div className="bl-value-icon">{v.icon}</div>
-            <h4 className="bl-value-title">{v.title}</h4>
-            <p className="bl-value-desc">{v.desc}</p>
-          </div>
-        ))}
-      </div>
+      {config.sections.storyTimeline && (
+        <div className="bl-values-grid">
+          {t.story.values.map((v, i) => (
+            <div className="bl-value-card reveal" key={i} style={{ transitionDelay: `${i * 0.1}s` }}>
+              <div className="bl-value-icon">{v.icon}</div>
+              <h4 className="bl-value-title">{v.title}</h4>
+              <p className="bl-value-desc">{v.desc}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <Footer lang={lang} setPage={setPage} />
     </div>
@@ -870,10 +894,19 @@ function StoryPage({ lang, setPage }) {
 
 // CONTACT
 function ContactPage({ lang, setPage }) {
+  const { config, prefillMessage, setPrefillMessage } = useConfig();
   const t = T[lang];
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [sent, setSent] = useState(false);
   useReveal();
+
+  // Consume prefill on mount — reset after injecting so it doesn't persist on re-visits
+  useEffect(() => {
+    if (prefillMessage) {
+      setForm(f => ({ ...f, message: prefillMessage }));
+      setPrefillMessage("");
+    }
+  }, [prefillMessage]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -926,19 +959,23 @@ function ContactPage({ lang, setPage }) {
             <h4>{lang === "fr" ? "Notre adresse" : "Our address"}</h4>
             <p>{t.contact.address}</p>
           </div>
-          <div className="bl-map-placeholder">◈ Bruxelles · Saint-Gilles</div>
+          {config.sections.contactMap && (
+            <div className="bl-map-placeholder">◈ Bruxelles · Saint-Gilles</div>
+          )}
           <div className="bl-contact-info-block">
             <h4>{lang === "fr" ? "Horaires" : "Hours"}</h4>
             <p>{lang === "fr" ? "Lun – Ven : 9h – 18h\nSam : 10h – 14h" : "Mon – Fri: 9am – 6pm\nSat: 10am – 2pm"}</p>
           </div>
-          <div>
-            <h4 style={{ fontFamily: "var(--serif)", fontSize: 18, color: "var(--gold-light)", marginBottom: "1rem" }}>
-              {lang === "fr" ? "Suivez-nous" : "Follow us"}
-            </h4>
-            <div className="bl-social-links">
-              {["IG", "FB", "TT", "YT"].map(s => <div key={s} className="bl-social-link">{s}</div>)}
+          {config.sections.socialLinks && (
+            <div>
+              <h4 style={{ fontFamily: "var(--serif)", fontSize: 18, color: "var(--gold-light)", marginBottom: "1rem" }}>
+                {lang === "fr" ? "Suivez-nous" : "Follow us"}
+              </h4>
+              <div className="bl-social-links">
+                {["IG", "FB", "TT", "YT"].map(s => <div key={s} className="bl-social-link">{s}</div>)}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       <Footer lang={lang} setPage={setPage} />
@@ -948,6 +985,7 @@ function ContactPage({ lang, setPage }) {
 
 // CART DRAWER
 function CartDrawer({ open, setOpen, cart, setCart, lang, setPage }) {
+  const { config, setPrefillMessage } = useConfig();
   const t = T[lang];
 
   const updateQty = (id, delta) => {
@@ -955,6 +993,21 @@ function CartDrawer({ open, setOpen, cart, setCart, lang, setPage }) {
   };
   const remove = (id) => setCart(c => c.filter(i => i.id !== id));
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+  const handleContactRedirect = () => {
+    const cartLines = cart.map(i =>
+      `  • ${i.name} × ${i.qty}  —  ${(i.price * i.qty).toFixed(2)} €`
+    ).join("\n");
+
+    const message = lang === "fr"
+      ? `Bonjour l'équipe Barba Luxe,\n\nJe suis intéressé(e) par les produits suivants et j'aimerais passer commande :\n\n${cartLines}\n\nTotal estimé : ${total.toFixed(2)} €\n\nPourriez-vous me confirmer la disponibilité de ces articles, les options et délais de livraison, ainsi que les modalités de paiement disponibles ?\n\nJe reste disponible pour tout échange.\n\nMerci d'avance pour votre retour,\nCordialement`
+      : `Hello Barba Luxe team,\n\nI'm interested in the following products and would like to place an order:\n\n${cartLines}\n\nEstimated total: ${total.toFixed(2)} €\n\nCould you please confirm the availability of these items, the shipping options and timeframes, as well as the available payment methods?\n\nI'm happy to discuss further at your convenience.\n\nThank you in advance,\nBest regards`;
+
+    setPrefillMessage(message);
+    setOpen(false);
+    setPage("contact");
+    window.scrollTo(0, 0);
+  };
 
   return (
     <>
@@ -990,9 +1043,66 @@ function CartDrawer({ open, setOpen, cart, setCart, lang, setPage }) {
               <span className="bl-cart-total-label">{t.checkout.total}</span>
               <span className="bl-cart-total-val">{total.toFixed(2)} €</span>
             </div>
-            <button className="bl-cart-checkout-btn" onClick={() => { setOpen(false); setPage("checkout"); window.scrollTo(0,0); }}>
-              {lang === "fr" ? "Commander" : "Checkout"} →
-            </button>
+
+            {/* Option A : checkout actif → bouton commander normal */}
+            {config.sections.checkout && (
+              <button className="bl-cart-checkout-btn" onClick={() => { setOpen(false); setPage("checkout"); window.scrollTo(0,0); }}>
+                {lang === "fr" ? "Commander" : "Checkout"} →
+              </button>
+            )}
+
+            {/* Option B : checkout désactivé + contact actif → bloc informatif avec redirection */}
+            {!config.sections.checkout && config.sections.contact && (
+              <div style={{
+                marginTop: "0.75rem",
+                padding: "1.1rem 1.25rem",
+                background: "rgba(201,169,110,0.07)",
+                border: "1px solid rgba(201,169,110,0.22)",
+                borderRadius: "4px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "0.6rem" }}>
+                  <span style={{ fontSize: "16px" }}>✉</span>
+                  <span style={{ fontFamily: "var(--serif)", fontSize: "14px", color: "var(--gold-light)" }}>
+                    {lang === "fr" ? "Commande sur mesure" : "Custom order"}
+                  </span>
+                </div>
+                <p style={{ fontSize: "12px", color: "rgba(247,242,235,0.6)", lineHeight: 1.6, marginBottom: "0.9rem" }}>
+                  {lang === "fr"
+                    ? "Le paiement en ligne n'est pas encore disponible. Contactez-nous directement — votre sélection sera déjà prête dans le message."
+                    : "Online payment is not available yet. Contact us directly — your selection will already be ready in the message."}
+                </p>
+                <button
+                  onClick={handleContactRedirect}
+                  style={{
+                    width: "100%", padding: "11px",
+                    background: "var(--gold)", color: "var(--night)",
+                    fontSize: "12px", letterSpacing: "0.07em", textTransform: "uppercase",
+                    fontWeight: 500, borderRadius: "2px", border: "none",
+                    cursor: "pointer", transition: "background 0.2s",
+                  }}
+                  onMouseEnter={e => e.target.style.background = "var(--gold-light)"}
+                  onMouseLeave={e => e.target.style.background = "var(--gold)"}
+                >
+                  {lang === "fr" ? "Nous contacter →" : "Contact us →"}
+                </button>
+              </div>
+            )}
+
+            {/* Option C : checkout ET contact désactivés → message simple */}
+            {!config.sections.checkout && !config.sections.contact && (
+              <div style={{
+                marginTop: "0.75rem", padding: "1rem",
+                background: "rgba(247,242,235,0.04)",
+                border: "1px solid rgba(201,169,110,0.15)",
+                borderRadius: "4px", textAlign: "center",
+              }}>
+                <p style={{ fontSize: "12px", color: "rgba(247,242,235,0.45)", lineHeight: 1.6 }}>
+                  {lang === "fr"
+                    ? "La commande en ligne n'est pas disponible pour le moment."
+                    : "Online ordering is not available at the moment."}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1325,6 +1435,7 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
 
 // FOOTER
 function Footer({ lang, setPage }) {
+  const { config } = useConfig();
   const t = T[lang];
   return (
     <footer className="bl-footer">
@@ -1338,16 +1449,18 @@ function Footer({ lang, setPage }) {
         </div>
         <div className="bl-footer-col">
           <h5>{lang === "fr" ? "Navigation" : "Navigation"}</h5>
-          {["home", "products", "story", "contact"].map(p => (
+          {["home", "products", "story", "contact"].filter(p => config.sections[p] !== false).map(p => (
             <a key={p} onClick={() => { setPage(p); window.scrollTo(0,0); }} style={{ cursor: "pointer" }}>{t.nav[p]}</a>
           ))}
         </div>
-        <div className="bl-footer-col">
-          <h5>{lang === "fr" ? "Contact" : "Contact"}</h5>
-          <a>contact@barbaluxe.be</a>
-          <a>+32 2 000 00 00</a>
-          <a>{t.contact.address}</a>
-        </div>
+        {config.sections.contact && (
+          <div className="bl-footer-col">
+            <h5>{lang === "fr" ? "Contact" : "Contact"}</h5>
+            <a>contact@barbaluxe.be</a>
+            <a>+32 2 000 00 00</a>
+            <a>{t.contact.address}</a>
+          </div>
+        )}
       </div>
       <div className="bl-footer-bottom">
         <span className="bl-footer-copy">© 2025 Barba Luxe — {lang === "fr" ? "Tous droits réservés" : "All rights reserved"}</span>
@@ -1445,6 +1558,7 @@ export default function App() {
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [config, setConfig] = useState(CONFIG);
+  const [prefillMessage, setPrefillMessage] = useState("");
 
   const addToCart = useCallback((item) => {
     setCart(c => {
@@ -1463,17 +1577,32 @@ export default function App() {
     }));
   };
 
+  // If current page is disabled, redirect to home
+  useEffect(() => {
+    const pageToSection = {
+      products: "products", story: "story",
+      contact: "contact", checkout: "checkout",
+    };
+    const section = pageToSection[page];
+    if (section && config.sections[section] === false) {
+      setPage("home");
+      window.scrollTo(0, 0);
+    }
+  }, [config, page]);
+
   return (
-    <ConfigContext.Provider value={{ config, toggleFlag }}>
+    <ConfigContext.Provider value={{ config, toggleFlag, prefillMessage, setPrefillMessage }}>
       <style>{css}</style>
       <div className="bl-app">
         <Nav page={page} setPage={setPage} lang={lang} setLang={setLang} cartCount={cartCount} setCartOpen={setCartOpen} />
-        <CartDrawer open={cartOpen} setOpen={setCartOpen} cart={cart} setCart={setCart} lang={lang} setPage={setPage} />
+        {config.sections.cartDrawer && (
+          <CartDrawer open={cartOpen} setOpen={setCartOpen} cart={cart} setCart={setCart} lang={lang} setPage={setPage} />
+        )}
         {page === "home" && <HomePage setPage={setPage} lang={lang} />}
-        {page === "products" && <ProductsPage lang={lang} addToCart={addToCart} />}
-        {page === "story" && <StoryPage lang={lang} setPage={setPage} />}
-        {page === "contact" && <ContactPage lang={lang} setPage={setPage} />}
-        {page === "checkout" && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} />}
+        {page === "products" && config.sections.products && <ProductsPage lang={lang} addToCart={addToCart} />}
+        {page === "story"    && config.sections.story    && <StoryPage lang={lang} setPage={setPage} />}
+        {page === "contact"  && config.sections.contact  && <ContactPage lang={lang} setPage={setPage} />}
+        {page === "checkout" && config.sections.checkout && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} />}
         <DevPanel lang={lang} />
       </div>
     </ConfigContext.Provider>
