@@ -1139,12 +1139,15 @@ function CartDrawer({ open, setOpen, cart, setCart, lang, setPage }) {
 // ─── VALIDATION HELPERS ───────────────────────────────────────────────────────
 function validateShipping(fields, t) {
   const errs = {};
-  if (!fields.firstName.trim()) errs.firstName = t.lang === "EN" ? "Champ requis" : "Required field";
-  if (!fields.lastName.trim()) errs.lastName = t.lang === "EN" ? "Champ requis" : "Required field";
-  if (!fields.address.trim()) errs.address = t.lang === "EN" ? "Champ requis" : "Required field";
-  if (!fields.city.trim()) errs.city = t.lang === "EN" ? "Champ requis" : "Required field";
-  if (!fields.zip.trim()) errs.zip = t.lang === "EN" ? "Champ requis" : "Required field";
-  if (!fields.country.trim()) errs.country = t.lang === "EN" ? "Champ requis" : "Required field";
+  const isFr = t.lang === "EN" ? false : true;
+  if (!fields.firstName.trim()) errs.firstName = isFr ? "Champ requis" : "Required field";
+  if (!fields.lastName.trim()) errs.lastName = isFr ? "Champ requis" : "Required field";
+  if (!fields.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email))
+    errs.email = isFr ? "Email invalide" : "Invalid email";
+  if (!fields.address.trim()) errs.address = isFr ? "Champ requis" : "Required field";
+  if (!fields.city.trim()) errs.city = isFr ? "Champ requis" : "Required field";
+  if (!fields.zip.trim()) errs.zip = isFr ? "Champ requis" : "Required field";
+  if (!fields.country.trim()) errs.country = isFr ? "Champ requis" : "Required field";
   return errs;
 }
 
@@ -1574,7 +1577,7 @@ function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) 
   }, [initialSuccess]);
 
   // Shipping form state
-  const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", address: "", city: "", zip: "", country: "" });
+  const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", email: "", address: "", city: "", zip: "", country: "" });
   const [shipErrors, setShipErrors] = useState({});
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -1694,6 +1697,14 @@ function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) 
                     {shipErrors[field] && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors[field]}</div>}
                   </div>
                 ))}
+              </div>
+              <div className="bl-form-group">
+                <label className="bl-form-label">{lang === "fr" ? "Email" : "Email"}</label>
+                <input className="bl-form-input" type="email" value={shipFields.email}
+                  placeholder={lang === "fr" ? "votre@email.com" : "your@email.com"}
+                  onChange={e => { setShipFields(f => ({...f, email: e.target.value})); setShipErrors(er => ({...er, email: undefined})); }}
+                  style={shipErrors.email ? { borderColor: "#E24B4A" } : {}} />
+                {shipErrors.email && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.email}</div>}
               </div>
               {["address"].map(field => (
                 <div className="bl-form-group" key={field}>
