@@ -1374,7 +1374,7 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
       elements: elementsObj,
       clientSecret,
       confirmParams: {
-        return_url: `${window.location.origin}/?payment=success`,
+        return_url: `${window.location.origin}/checkout?payment=success`,
       },
       redirect: "if_required",
     });
@@ -1805,23 +1805,36 @@ function DevPanel({ lang }) {
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [lang, setLang] = useState("fr");
-  const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [config, setConfig] = useState(CONFIG);
   const [prefillMessage, setPrefillMessage] = useState("");
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   // ── Routing SPA : synchronise URL ↔ state ─────────────────────────────────
-  // Lit la page initiale depuis l'URL (ex: /products → "products")
+  // isPaymentSuccess = TRUE uniquement si Stripe a redirigé avec ?payment=success
+  // On vérifie AUSSI le pathname pour éviter les faux positifs
+  const _params = new URLSearchParams(window.location.search);
+  const _path = window.location.pathname.replace("/", "") || "home";
+  const isPaymentSuccess = (
+    _params.get("payment") === "success" &&
+    (_path === "checkout" || _path === "")
+  );
+
+  // Nettoie l'URL immédiatement si succès détecté
+  if (isPaymentSuccess) {
+    window.history.replaceState({ page: "checkout" }, "", "/checkout");
+  }
+
+  const [paymentSuccess] = useState(isPaymentSuccess);
+
   const [page, setPageState] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") return "checkout";
-    const path = window.location.pathname.replace("/", "") || "home";
+    if (isPaymentSuccess) return "checkout";
     const valid = ["home", "products", "story", "contact", "checkout"];
-    return valid.includes(path) ? path : "home";
+    return valid.includes(_path) ? _path : "home";
   });
 
-  // Navigate : met à jour state + URL + scroll
+  const [cart, setCart] = useState([]);
+
+  // Navigate : met à jour state + URL
   const setPage = (p) => {
     setPageState(p);
     const url = p === "home" ? "/" : `/${p}`;
@@ -1837,16 +1850,6 @@ export default function App() {
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, []);
-
-  // Détecte le retour depuis Bancontact (?payment=success)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
-      setPaymentSuccess(true);
-      setCart([]);
-      window.history.replaceState({ page: "checkout" }, "", "/checkout");
-    }
   }, []);
 
   const addToCart = useCallback((item) => {
