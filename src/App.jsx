@@ -98,7 +98,7 @@ const CONFIG = {
   // ── Paiement Stripe ───────────────────────────────────────────────────────
   // En production Vite : utiliser import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   // Ne jamais mettre la SECRET key ici — elle reste dans /api/create-payment-intent.js
-  stripePublishableKey: "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU",
+  stripePublishableKey: "pk_test_REMPLACE_PAR_TA_CLE",
 };
 
 // ─── CONFIG CONTEXT ───────────────────────────────────────────────────────────
@@ -1182,7 +1182,7 @@ async function getStripe() {
   if (stripeInstance) return stripeInstance;
   // En production Vite : remplace par import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   const key = CONFIG.stripePublishableKey;
-  if (!key || key === "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") return null;
+  if (!key || key === "pk_test_REMPLACE_PAR_TA_CLE") return null;
   const StripeConstructor = await loadStripeScript();
   stripeInstance = StripeConstructor(key);
   return stripeInstance;
@@ -1272,7 +1272,7 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
 
   // Étape 2 — Dès qu'on a le clientSecret : charger Stripe et monter le PaymentElement
   useEffect(() => {
-    if (!clientSecret || !containerRef.current) return;
+    if (!clientSecret) return;
     let mounted = true;
 
     async function mountElement() {
@@ -1280,13 +1280,23 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
         const stripeInstance = await getStripe();
         if (!mounted || !stripeInstance) return;
 
+        // Attendre que le container soit dans le DOM (petit délai si nécessaire)
+        let container = containerRef.current;
+        if (!container) {
+          await new Promise(r => setTimeout(r, 50));
+          container = containerRef.current;
+        }
+        if (!container) {
+          throw new Error("Container Stripe introuvable dans le DOM");
+        }
+
         // Le clientSecret EST OBLIGATOIRE pour que PaymentElement s'affiche
         const els = stripeInstance.elements({ appearance, clientSecret });
         const paymentEl = els.create("payment", {
           layout: { type: "tabs", defaultCollapsed: false },
         });
 
-        paymentEl.mount(containerRef.current);
+        paymentEl.mount(container);
         paymentEl.on("ready", () => { setPayElementReady(true); setLoading(false); });
         paymentEl.on("change", (e) => {
           setStripeError(e.error ? e.error.message : "");
@@ -1342,30 +1352,37 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
 
   return (
     <div>
-      {/* État de chargement — création du PaymentIntent en cours */}
+      {/* Loader élégant pendant l'initialisation */}
       {loading && !stripeError && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 8 }}>
-          <div style={{ fontSize: 13, color: "rgba(247,242,235,0.4)", marginBottom: 4 }}>
+        <div style={{
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "3rem 0", gap: "1.25rem",
+        }}>
+          {/* Spinner doré */}
+          <div style={{
+            width: 40, height: 40,
+            border: "2px solid rgba(201,169,110,0.15)",
+            borderTop: "2px solid #C9A96E",
+            borderRadius: "50%",
+            animation: "bl-spin 0.8s linear infinite",
+          }} />
+          <span style={{
+            fontSize: 13, letterSpacing: "0.08em",
+            color: "rgba(247,242,235,0.45)",
+            textTransform: "uppercase",
+          }}>
             {lang === "fr" ? "Initialisation du paiement…" : "Initializing payment…"}
-          </div>
-          {[1, 2, 3].map(i => (
-            <div key={i} style={{
-              height: 44, borderRadius: 4,
-              background: "rgba(247,242,235,0.05)",
-              border: "1px solid rgba(201,169,110,0.12)",
-            }} />
-          ))}
+          </span>
+          {/* Keyframe injecté inline */}
+          <style>{`@keyframes bl-spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
-      {/* Container Stripe — caché pendant le chargement, visible dès que prêt */}
+      {/* Container Stripe — toujours dans le DOM, caché jusqu'à ce que Stripe soit prêt */}
       <div
         ref={containerRef}
-        style={{
-          opacity: payElementReady ? 1 : 0,
-          transition: "opacity 0.4s ease",
-          minHeight: payElementReady ? 0 : 200,
-        }}
+        style={{ display: payElementReady ? "block" : "none" }}
       />
 
       {/* Erreur */}
