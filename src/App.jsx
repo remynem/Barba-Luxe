@@ -616,6 +616,14 @@ const css = `
     .bl-reassurance-inner { grid-template-columns: 1fr; }
     .bl-hero-content { padding: 0 6vw; }
     .bl-cart-drawer { width: 100vw; }
+    .bl-checkout-inner { padding: 1.5rem 4vw; }
+    .bl-checkout-main { padding: 1.25rem; }
+    .bl-checkout-title { font-size: 26px; }
+    .bl-checkout-btns { flex-direction: column; }
+    .bl-btn-back { width: 100%; text-align: center; }
+    .bl-btn-primary { width: 100%; }
+    .bl-progress { gap: 0; }
+    .bl-progress-label { font-size: 10px; }
   }
 `;
 
@@ -1427,6 +1435,8 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
           visibility: ready ? "visible" : "hidden",
           height: ready ? "auto" : 0,
           overflow: "hidden",
+          width: "100%",
+          boxSizing: "border-box",
           paddingTop: ready ? "0.5rem" : 0,
           paddingBottom: ready ? "0.5rem" : 0,
         }}
