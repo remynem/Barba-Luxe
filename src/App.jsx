@@ -163,9 +163,9 @@ const T = {
     story: {
       title: "Notre Histoire",
       subtitle: "Tout a commencé par une barbe mal entretenue et une curiosité obstinée.",
-      body1: "Rémy ISH a passé plus de 8 ans comme développeur full stack senior — chez Toyota Motor Europe notamment — à construire des plateformes e-commerce utilisées dans toute l'Europe. Mais depuis plus de 20 ans, une question le taraudait : comment répondre concrètement à un besoin de sa communauté ?",
-      body2: "Avec le temps, il a évolué vers le QA automation, travaillant aussi bien dans le secteur privé qu'au sein d'institutions publiques belges. Cette rigueur technique — lire le code, comprendre les systèmes, ne rien laisser au hasard — il l'a mise au service d'un projet plus personnel : une huile de barbe formulée avec soin, pour les hommes qui méritent mieux que l'ordinaire.",
-      body3: "Barba Luxe est née de cette exigence-là. Chaque flacon est fabriqué à la main, en petites séries, à Ganshoren. Pas d'automatisation ici — juste du temps, de l'attention, et des ingrédients qu'on a choisis un par un.",
+      body1: "Rémy ISH a passé plus de 8 ans comme développeur full stack senior — chez Toyota Motor Europe notamment — à construire des plateformes e-commerce utilisées dans toute l'Europe. En parallèle, il a évolué vers le QA automation, travaillant aussi bien dans le secteur privé qu'au sein d'institutions publiques belges.",
+      body2: "Mais depuis toujours, une seule question revient : comment simplifier la vie des gens ? Pas de manière abstraite — concrètement. Si quelque chose peut être automatisé pour libérer du temps, alors ça vaut la peine d'être construit. L'IA est arrivée au bon moment.",
+      body3: "Barba Luxe est une première étape — un terrain d'essai pour une plateforme e-commerce que n'importe qui pourra utiliser pour lancer son business en ligne. La suite ? Un projet d'automatisation plus profond, en cours d'analyse. L'objectif reste le même : rendre simple ce qui était compliqué.",
       values: [
         { icon: "🌿", title: "Naturel", desc: "Zéro silicone, zéro paraben. Des formules que vous pouvez prononcer." },
         { icon: "🇧🇪", title: "Belge", desc: "Conçu, fabriqué et conditionné à Ganshoren." },
@@ -259,9 +259,9 @@ const T = {
     story: {
       title: "Our Story",
       subtitle: "It all started with a poorly groomed beard and a stubborn curiosity.",
-      body1: "Rémy ISH spent over 8 years as a senior full stack developer — including at Toyota Motor Europe — building e-commerce platforms used across the continent. But for more than 20 years, one question stayed with him: how to concretely answer a need within his community.",
-      body2: "Over time, he moved into QA automation, working across both private companies and Belgian public institutions. That same technical rigour — reading code, understanding systems, leaving nothing to chance — he brought to something more personal: a beard oil crafted with intention, for men who deserve better than the ordinary.",
-      body3: "Barba Luxe was born from that standard. Every bottle is handmade in small batches in Ganshoren. No automation here — just time, attention, and ingredients chosen one by one.",
+      body1: "Rémy ISH spent over 8 years as a senior full stack developer — including at Toyota Motor Europe — building e-commerce platforms used across the continent. Along the way, he moved into QA automation, working across both private companies and Belgian public institutions.",
+      body2: "But one question never left him: how do you genuinely simplify people's lives? Not in theory — concretely. If something can be automated to give people back their time, it's worth building. AI arrived at exactly the right moment.",
+      body3: "Barba Luxe is a first step — a proof of concept for a platform that anyone can use to launch an online business. What comes next is a deeper automation project, currently in analysis. The goal stays the same: make the complicated simple.",
       values: [
         { icon: "🌿", title: "Natural", desc: "Zero silicone, zero parabens. Formulas you can actually pronounce." },
         { icon: "🇧🇪", title: "Belgian", desc: "Designed, made, and bottled in Ganshoren." },
