@@ -27,12 +27,12 @@ const CONFIG = {
     nameItalic: "Luxe",          // partie en italique dans le logo
     subBrand: "by ISH",          // sous-marque affichée sous le logo
     tagline: { fr: "Formulées à Bruxelles. Senties partout.", en: "Crafted in Brussels. Felt everywhere." },
-    address: { fr: "Rue du Bailli 12, 1050 Bruxelles", en: "12 Rue du Bailli, 1050 Brussels" },
+    address: { fr: "Avenue Charles-Quint 123, 1083 Ganshoren", en: "123 Avenue Charles-Quint, 1083 Ganshoren" },
     email: "contact@barbaluxe.be",
     phone: "+32 2 000 00 00",
     since: "2019",
     country: { fr: "Belgique", en: "Belgium" },
-    city: "Bruxelles",
+    city: "Ganshoren",
   },
 
   // ── Sections actives (true = visible, false = masquée) ────────────────────
@@ -142,7 +142,7 @@ const T = {
     reassurance: [
       { icon: "⟡", title: "Livraison offerte", sub: "Dès 45€ d'achat" },
       { icon: "✦", title: "100% naturel", sub: "Aucun compromis" },
-      { icon: "◈", title: "Fabriqué en Belgique", sub: "Bruxelles, depuis 2019" },
+      { icon: "◈", title: "Fabriqué en Belgique", sub: "Ganshoren, depuis 2019" },
       { icon: "↺", title: "Retours 30 jours", sub: "Sans conditions" },
     ],
     products: {
@@ -163,12 +163,12 @@ const T = {
     story: {
       title: "Notre Histoire",
       subtitle: "Tout a commencé par une barbe mal entretenue et une curiosité obstinée.",
-      body1: "En 2019, Maxime Devos, chimiste de formation et barbier du dimanche, ne trouvait aucune huile qui lui correspondait vraiment. Trop lourdes, trop parfumées, trop industrielles. Alors il a commencé à formuler dans sa cuisine de Saint-Gilles.",
-      body2: "Six mois et 47 versions plus tard, Ambre Noir était née. Une huile qu'il offrait à ses amis, qui revenaient en redemander. Barba Luxe a ouvert ses portes en septembre 2019, dans un petit atelier rue du Bailli.",
-      body3: "Aujourd'hui, chaque flacon est encore fabriqué à la main, en petites séries, avec des ingrédients sourcés directement auprès de producteurs que Maxime connaît personnellement.",
+      body1: "En 2019, Rémy ISH, chimiste de formation et barbier du dimanche, ne trouvait aucune huile qui lui correspondait vraiment. Trop lourdes, trop parfumées, trop industrielles. Alors il a commencé à formuler dans sa cuisine de Ganshoren.",
+      body2: "Six mois et 47 versions plus tard, Ambre Noir était née. Une huile qu'il offrait à ses amis, qui revenaient en redemander. Barba Luxe a ouvert ses portes en septembre 2019, dans un petit atelier avenue Charles-Quint.",
+      body3: "Aujourd'hui, chaque flacon est encore fabriqué à la main, en petites séries, avec des ingrédients sourcés directement auprès de producteurs que Rémy ISH connaît personnellement.",
       values: [
         { icon: "🌿", title: "Naturel", desc: "Zéro silicone, zéro paraben. Des formules que vous pouvez prononcer." },
-        { icon: "🇧🇪", title: "Belge", desc: "Conçu, fabriqué et conditionné à Bruxelles." },
+        { icon: "🇧🇪", title: "Belge", desc: "Conçu, fabriqué et conditionné à Ganshoren." },
         { icon: "♻️", title: "Durable", desc: "Flacons en verre recyclé, expédition sans plastique." },
         { icon: "🤝", title: "Transparent", desc: "Chaque ingrédient, sa source. On ne cache rien." },
       ]
@@ -238,7 +238,7 @@ const T = {
     reassurance: [
       { icon: "⟡", title: "Free shipping", sub: "On orders over €45" },
       { icon: "✦", title: "100% natural", sub: "No compromises" },
-      { icon: "◈", title: "Made in Belgium", sub: "Brussels, since 2019" },
+      { icon: "◈", title: "Made in Belgium", sub: "Ganshoren, since 2019" },
       { icon: "↺", title: "30-day returns", sub: "No questions asked" },
     ],
     products: {
@@ -259,12 +259,12 @@ const T = {
     story: {
       title: "Our Story",
       subtitle: "It all started with a poorly groomed beard and a stubborn curiosity.",
-      body1: "In 2019, Maxime Devos — a trained chemist and weekend barber — couldn't find an oil that truly worked for him. Too heavy, too perfumed, too industrial. So he started formulating in his kitchen in Saint-Gilles.",
-      body2: "Six months and 47 versions later, Black Amber was born. An oil he gave to friends, who kept coming back for more. Barba Luxe opened its doors in September 2019, in a small workshop on Rue du Bailli.",
-      body3: "Today, every bottle is still made by hand, in small batches, with ingredients sourced directly from producers Maxime knows personally.",
+      body1: "In 2019, Rémy ISH — a trained chemist and weekend barber — couldn't find an oil that truly worked for him. Too heavy, too perfumed, too industrial. So he started formulating in his kitchen in Ganshoren.",
+      body2: "Six months and 47 versions later, Black Amber was born. An oil he gave to friends, who kept coming back for more. Barba Luxe opened its doors in September 2019, in a small workshop on Avenue Charles-Quint.",
+      body3: "Today, every bottle is still made by hand, in small batches, with ingredients sourced directly from producers Rémy ISH knows personally.",
       values: [
         { icon: "🌿", title: "Natural", desc: "Zero silicone, zero parabens. Formulas you can actually pronounce." },
-        { icon: "🇧🇪", title: "Belgian", desc: "Designed, made, and bottled in Brussels." },
+        { icon: "🇧🇪", title: "Belgian", desc: "Designed, made, and bottled in Ganshoren." },
         { icon: "♻️", title: "Sustainable", desc: "Recycled glass bottles, plastic-free shipping." },
         { icon: "🤝", title: "Transparent", desc: "Every ingredient, every source. We have nothing to hide." },
       ]
@@ -890,7 +890,7 @@ function StoryPage({ lang, setPage }) {
             {lang === "fr"
               ? "« Je ne cherchais pas à créer une marque. Je cherchais juste quelque chose qui fonctionnerait vraiment. »"
               : '"I wasn\'t trying to build a brand. I was just looking for something that would actually work."'}
-            <br /><span style={{ fontSize: "13px", color: "rgba(247,242,235,0.4)", fontStyle: "normal", letterSpacing: "0.05em" }}>— Maxime Devos, {lang === "fr" ? "Fondateur" : "Founder"}</span>
+            <br /><span style={{ fontSize: "13px", color: "rgba(247,242,235,0.4)", fontStyle: "normal", letterSpacing: "0.05em" }}>— Rémy ISH, {lang === "fr" ? "Fondateur" : "Founder"}</span>
           </blockquote>
           <p>{t.story.body2}</p>
           <p>{t.story.body3}</p>
@@ -986,7 +986,7 @@ function ContactPage({ lang, setPage }) {
             <p>{t.contact.address}</p>
           </div>
           {config.sections.contactMap && (
-            <div className="bl-map-placeholder">◈ Bruxelles · Saint-Gilles</div>
+            <div className="bl-map-placeholder">◈ Ganshoren · Avenue Charles-Quint</div>
           )}
           <div className="bl-contact-info-block">
             <h4>{lang === "fr" ? "Horaires" : "Hours"}</h4>
@@ -1235,8 +1235,10 @@ async function sendOrderEmails({ lang, cart, shipFields, shipping, shippingCost,
   // Email à la boutique
   await window.emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateBoutique, {
     ...commonParams,
-    to_name:  "Barba Luxe",
-    to_email: CONFIG.emailjs.emailBoutique,
+    to_name:         "Barba Luxe",
+    to_email:        CONFIG.emailjs.emailBoutique,
+    customer_email:  shipFields.email,
+    customer_phone:  shipFields.phone || (lang === "fr" ? "Non renseigné" : "Not provided"),
   });
 }
 
@@ -1577,7 +1579,7 @@ function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) 
   }, [initialSuccess]);
 
   // Shipping form state
-  const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", email: "", address: "", city: "", zip: "", country: "" });
+  const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", email: "", phone: "", address: "", city: "", zip: "", country: "" });
   const [shipErrors, setShipErrors] = useState({});
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
@@ -1706,6 +1708,12 @@ function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) 
                   style={shipErrors.email ? { borderColor: "#E24B4A" } : {}} />
                 {shipErrors.email && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.email}</div>}
               </div>
+              <div className="bl-form-group">
+                <label className="bl-form-label">{lang === "fr" ? "Téléphone / GSM" : "Phone"}</label>
+                <input className="bl-form-input" type="tel" value={shipFields.phone}
+                  placeholder={lang === "fr" ? "+32 470 00 00 00" : "+32 470 00 00 00"}
+                  onChange={e => setShipFields(f => ({...f, phone: e.target.value}))} />
+              </div>
               {["address"].map(field => (
                 <div className="bl-form-group" key={field}>
                   <label className="bl-form-label">{t.checkout[field]}</label>
@@ -1826,7 +1834,7 @@ function Footer({ lang, setPage }) {
       </div>
       <div className="bl-footer-bottom">
         <span className="bl-footer-copy">© 2025 Barba Luxe — {lang === "fr" ? "Tous droits réservés" : "All rights reserved"}</span>
-        <span className="bl-footer-copy">{lang === "fr" ? "Fait avec soin à Bruxelles" : "Crafted with care in Brussels"}</span>
+        <span className="bl-footer-copy">{lang === "fr" ? "Fait avec soin à Ganshoren" : "Crafted with care in Ganshoren"}</span>
       </div>
     </footer>
   );
