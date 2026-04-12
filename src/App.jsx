@@ -1190,8 +1190,9 @@ let stripeInstance = null;
 async function getStripe() {
   if (stripeInstance) return stripeInstance;
   const key = CONFIG.stripePublishableKey;
-  if (!key || key !== "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") {
-    throw new Error("Stripe publishable key manquante dans CONFIG.stripePublishableKey");
+  console.log("[Stripe] Clé lue:", key ? key.substring(0, 20) + "..." : "VIDE");
+  if (!key) {
+    throw new Error("CONFIG.stripePublishableKey est vide");
   }
   const StripeConstructor = await loadStripeScript();
   stripeInstance = StripeConstructor(key);
@@ -1468,12 +1469,12 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
 }
 
 // ─── CheckoutPage principal ────────────────────────────────────────────────
-function CheckoutPage({ lang, cart, setCart, setPage }) {
+function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) {
   const { config } = useConfig();
   const t = T[lang];
   const [step, setStep] = useState(0);
   const [shipping, setShipping] = useState("standard");
-  const [ordered, setOrdered] = useState(false);
+  const [ordered, setOrdered] = useState(initialSuccess); // true si retour Bancontact
   const [orderNum] = useState(() => Math.floor(Math.random() * 90000 + 10000));
 
   // Shipping form state
@@ -1485,16 +1486,6 @@ function CheckoutPage({ lang, cart, setCart, setPage }) {
   const total = subtotal + shippingCost;
 
   const stepStatus = (i) => i < step ? "done" : i === step ? "active" : "pending";
-
-  // Vérifie si on revient d'un redirect Bancontact (return_url)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("payment") === "success") {
-      setOrdered(true);
-      // Nettoie l'URL
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, []);
 
   if (ordered) {
     return (
@@ -1814,11 +1805,49 @@ function DevPanel({ lang }) {
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [lang, setLang] = useState("fr");
-  const [page, setPage] = useState("home");
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [config, setConfig] = useState(CONFIG);
   const [prefillMessage, setPrefillMessage] = useState("");
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  // ── Routing SPA : synchronise URL ↔ state ─────────────────────────────────
+  // Lit la page initiale depuis l'URL (ex: /products → "products")
+  const [page, setPageState] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") return "checkout";
+    const path = window.location.pathname.replace("/", "") || "home";
+    const valid = ["home", "products", "story", "contact", "checkout"];
+    return valid.includes(path) ? path : "home";
+  });
+
+  // Navigate : met à jour state + URL + scroll
+  const setPage = (p) => {
+    setPageState(p);
+    const url = p === "home" ? "/" : `/${p}`;
+    window.history.pushState({ page: p }, "", url);
+    window.scrollTo(0, 0);
+  };
+
+  // Gère le bouton Retour/Avant du navigateur
+  useEffect(() => {
+    const onPop = (e) => {
+      const p = e.state?.page || window.location.pathname.replace("/", "") || "home";
+      setPageState(p);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // Détecte le retour depuis Bancontact (?payment=success)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("payment") === "success") {
+      setPaymentSuccess(true);
+      setCart([]);
+      window.history.replaceState({ page: "checkout" }, "", "/checkout");
+    }
+  }, []);
 
   const addToCart = useCallback((item) => {
     setCart(c => {
@@ -1862,7 +1891,7 @@ export default function App() {
         {page === "products" && config.sections.products && <ProductsPage lang={lang} addToCart={addToCart} />}
         {page === "story"    && config.sections.story    && <StoryPage lang={lang} setPage={setPage} />}
         {page === "contact"  && config.sections.contact  && <ContactPage lang={lang} setPage={setPage} />}
-        {page === "checkout" && config.sections.checkout && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} />}
+        {page === "checkout" && config.sections.checkout && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} initialSuccess={paymentSuccess} />}
         <DevPanel lang={lang} />
       </div>
     </ConfigContext.Provider>
