@@ -1190,7 +1190,7 @@ let stripeInstance = null;
 async function getStripe() {
   if (stripeInstance) return stripeInstance;
   const key = CONFIG.stripePublishableKey;
-  if (!key || key === "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") {
+  if (!key || key !== "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") {
     throw new Error("Stripe publishable key manquante dans CONFIG.stripePublishableKey");
   }
   const StripeConstructor = await loadStripeScript();
