@@ -1285,13 +1285,17 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
       const appearance = {
         theme: "night",
         variables: {
-          colorPrimary:    "#C9A96E",
-          colorBackground: "#1C1209",
-          colorText:       "#F7F2EB",
-          colorDanger:     "#E24B4A",
-          fontFamily:      "'DM Sans', system-ui, sans-serif",
-          borderRadius:    "4px",
-          spacingUnit:     "5px",
+          colorPrimary:        "#C9A96E",
+          colorBackground:     "#1C1209",
+          colorText:           "#F7F2EB",
+          colorDanger:         "#E24B4A",
+          fontFamily:          "'DM Sans', system-ui, sans-serif",
+          borderRadius:        "6px",
+          spacingUnit:         "6px",
+          spacingGridRow:      "20px",
+          spacingGridColumn:   "16px",
+          spacingTab:          "10px",
+          fontSizeBase:        "14px",
         },
         rules: {
           ".Input": {
@@ -1423,6 +1427,8 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
           visibility: ready ? "visible" : "hidden",
           height: ready ? "auto" : 0,
           overflow: "hidden",
+          paddingTop: ready ? "0.5rem" : 0,
+          paddingBottom: ready ? "0.5rem" : 0,
         }}
       />
 
