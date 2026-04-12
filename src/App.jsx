@@ -98,7 +98,7 @@ const CONFIG = {
   // ── Paiement Stripe ───────────────────────────────────────────────────────
   // En production Vite : utiliser import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   // Ne jamais mettre la SECRET key ici — elle reste dans /api/create-payment-intent.js
-  stripePublishableKey: "pk_test_REMPLACE_PAR_TA_CLE",
+  stripePublishableKey: "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU",
 };
 
 // ─── CONFIG CONTEXT ───────────────────────────────────────────────────────────
@@ -1182,7 +1182,7 @@ async function getStripe() {
   if (stripeInstance) return stripeInstance;
   // En production Vite : remplace par import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   const key = CONFIG.stripePublishableKey;
-  if (!key || key === "pk_test_REMPLACE_PAR_TA_CLE") return null;
+  if (!key || key === "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") return null;
   const StripeConstructor = await loadStripeScript();
   stripeInstance = StripeConstructor(key);
   return stripeInstance;
