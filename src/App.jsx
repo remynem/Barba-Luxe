@@ -1161,18 +1161,27 @@ function validatePayment(card, lang) {
 // ─── Charge Stripe.js via CDN si pas encore chargé ─────────────────────────
 function loadStripeScript() {
   return new Promise((resolve, reject) => {
+    // Déjà disponible
     if (window.Stripe) return resolve(window.Stripe);
+
     const existing = document.getElementById("stripe-js");
     if (existing) {
+      // Script déjà dans le DOM — peut être chargé entre-temps
+      if (window.Stripe) return resolve(window.Stripe);
       existing.addEventListener("load", () => resolve(window.Stripe));
+      existing.addEventListener("error", () => reject(new Error("Stripe.js failed to load")));
       return;
     }
+
+    // Injection du script
     const script = document.createElement("script");
     script.id = "stripe-js";
     script.src = "https://js.stripe.com/v3/";
-    script.async = true;
-    script.onload = () => resolve(window.Stripe);
-    script.onerror = () => reject(new Error("Stripe.js failed to load"));
+    script.onload = () => {
+      if (window.Stripe) resolve(window.Stripe);
+      else reject(new Error("Stripe loaded but window.Stripe is undefined"));
+    };
+    script.onerror = () => reject(new Error("Stripe.js network error"));
     document.head.appendChild(script);
   });
 }
@@ -1180,9 +1189,10 @@ function loadStripeScript() {
 let stripeInstance = null;
 async function getStripe() {
   if (stripeInstance) return stripeInstance;
-  // En production Vite : remplace par import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   const key = CONFIG.stripePublishableKey;
-  if (!key || key === "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") return null;
+  if (!key || key === "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU") {
+    throw new Error("Stripe publishable key manquante dans CONFIG.stripePublishableKey");
+  }
   const StripeConstructor = await loadStripeScript();
   stripeInstance = StripeConstructor(key);
   return stripeInstance;
@@ -1242,16 +1252,19 @@ function StripePaymentForm({ lang, total, cart, onSuccess, onBack }) {
       // ── 2. Charger Stripe.js ───────────────────────────────────────────
       let stripe;
       try {
+        console.log("[Stripe] Chargement en cours...");
         stripe = await getStripe();
         if (!mountedRef.current) return;
+        console.log("[Stripe] Chargé:", stripe ? "OK" : "NULL");
         if (!stripe) {
           throw new Error("Clé Stripe manquante — vérifiez CONFIG.stripePublishableKey");
         }
       } catch (err) {
         if (!mountedRef.current) return;
-        setError(lang === "fr"
+        console.error("[Stripe] Erreur chargement:", err.message);
+        setError(err.message || (lang === "fr"
           ? "Impossible de charger Stripe. Vérifiez votre connexion."
-          : "Unable to load Stripe. Check your connection.");
+          : "Unable to load Stripe. Check your connection."));
         setStatus("error");
         return;
       }
