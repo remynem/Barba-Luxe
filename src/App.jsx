@@ -1474,8 +1474,17 @@ function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) 
   const t = T[lang];
   const [step, setStep] = useState(0);
   const [shipping, setShipping] = useState("standard");
-  const [ordered, setOrdered] = useState(initialSuccess); // true si retour Bancontact
+  const [ordered, setOrdered] = useState(initialSuccess);
   const [orderNum] = useState(() => Math.floor(Math.random() * 90000 + 10000));
+
+  // Sync avec initialSuccess — si App remet paymentSuccess à false,
+  // CheckoutPage se remet en mode commande normale
+  useEffect(() => {
+    setOrdered(initialSuccess);
+    if (!initialSuccess) {
+      setStep(0); // Repart de l'étape 1
+    }
+  }, [initialSuccess]);
 
   // Shipping form state
   const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", address: "", city: "", zip: "", country: "" });
@@ -1824,7 +1833,7 @@ export default function App() {
     window.history.replaceState({ page: "checkout" }, "", "/checkout");
   }
 
-  const [paymentSuccess] = useState(isPaymentSuccess);
+  const [paymentSuccess, setPaymentSuccess] = useState(isPaymentSuccess);
 
   const [page, setPageState] = useState(() => {
     if (isPaymentSuccess) return "checkout";
@@ -1835,7 +1844,9 @@ export default function App() {
   const [cart, setCart] = useState([]);
 
   // Navigate : met à jour state + URL
+  // Quand on quitte checkout → reset paymentSuccess pour la prochaine commande
   const setPage = (p) => {
+    if (p !== "checkout") setPaymentSuccess(false);
     setPageState(p);
     const url = p === "home" ? "/" : `/${p}`;
     window.history.pushState({ page: p }, "", url);
