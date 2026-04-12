@@ -99,6 +99,19 @@ const CONFIG = {
   // En production Vite : utiliser import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
   // Ne jamais mettre la SECRET key ici — elle reste dans /api/create-payment-intent.js
   stripePublishableKey: "pk_test_51TL0Sr8u8IGiaMG2MUHnsLKpEO9x85dJN2VcfOGUc4mSpj5dohb0SaC5CFZPeJLEAFw2T2fH1ntn4aI9LuXUvnoc00x6rGKQQU",
+
+  // ── EmailJS — Emails de confirmation de commande ──────────────────────────
+  // 1. Créez un compte sur https://www.emailjs.com (gratuit jusqu'à 200 emails/mois)
+  // 2. Créez un "Email Service" (Gmail, Outlook…) et notez le Service ID
+  // 3. Créez deux templates (un client, un boutique) et notez leurs Template IDs
+  // 4. Récupérez votre Public Key dans Account > API Keys
+  emailjs: {
+    publicKey:        "3Fk0BsUhS7G8Eeo_j",
+    serviceId:        "service_trtr7uc",
+    templateClient:   "template_5oa1wc9",
+    templateBoutique: "template_qvm731p",
+    emailBoutique:    "remy@ish-group.eu",
+  },
 };
 
 // ─── CONFIG CONTEXT ───────────────────────────────────────────────────────────
@@ -1167,6 +1180,63 @@ function validatePayment(card, lang) {
 // Ici on utilise le CDN Stripe (window.Stripe) + la clé en CONFIG.stripeKey
 
 // ─── Charge Stripe.js via CDN si pas encore chargé ─────────────────────────
+
+// ─── EMAILJS ──────────────────────────────────────────────────────────────────
+function useEmailJS() {
+  const loaded = useRef(false);
+  useEffect(() => {
+    if (loaded.current) return;
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js";
+    script.onload = () => {
+      window.emailjs.init({ publicKey: CONFIG.emailjs.publicKey });
+      loaded.current = true;
+    };
+    document.head.appendChild(script);
+  }, []);
+}
+
+async function sendOrderEmails({ lang, cart, shipFields, shipping, shippingCost, orderNum }) {
+  if (!window.emailjs) return;
+
+  const orders = cart.map(i => ({
+    name:  i.name,
+    price: (i.price * i.qty).toFixed(2) + " €",
+    units: i.qty,
+  }));
+
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const total = subtotal + shippingCost;
+
+  const cost = {
+    shipping: shippingCost > 0 ? shippingCost.toFixed(2) + " €" : (lang === "fr" ? "Gratuite" : "Free"),
+    tax:      "0,00 €",
+    total:    total.toFixed(2) + " €",
+  };
+
+  const commonParams = {
+    order_id:         orderNum,
+    orders,
+    cost,
+    customer_name:    `${shipFields.firstName} ${shipFields.lastName}`,
+    customer_address: `${shipFields.address}, ${shipFields.zip} ${shipFields.city}, ${shipFields.country}`,
+  };
+
+  // Email au client
+  await window.emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateClient, {
+    ...commonParams,
+    to_name:  shipFields.firstName,
+    to_email: shipFields.email,
+  });
+
+  // Email à la boutique
+  await window.emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateBoutique, {
+    ...commonParams,
+    to_name:  "Barba Luxe",
+    to_email: CONFIG.emailjs.emailBoutique,
+  });
+}
+
 function loadStripeScript() {
   return new Promise((resolve, reject) => {
     // Déjà disponible
@@ -1489,6 +1559,7 @@ function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) 
   const { config } = useConfig();
   const t = T[lang];
   const [step, setStep] = useState(0);
+  useEmailJS(); // Charge le SDK EmailJS au montage du composant
   const [shipping, setShipping] = useState("standard");
   const [ordered, setOrdered] = useState(initialSuccess);
   const [orderNum] = useState(() => Math.floor(Math.random() * 90000 + 10000));
@@ -1696,7 +1767,11 @@ function CheckoutPage({ lang, cart, setCart, setPage, initialSuccess = false }) 
                 lang={lang}
                 total={total}
                 cart={cart}
-                onSuccess={() => { setOrdered(true); setCart([]); }}
+                onSuccess={() => {
+                  setOrdered(true);
+                  setCart([]);
+                  sendOrderEmails({ lang, cart, shipFields, shipping, shippingCost, orderNum }).catch(console.error);
+                }}
                 onBack={() => setStep(1)}
               />
             </div>
