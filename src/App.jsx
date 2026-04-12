@@ -163,9 +163,9 @@ const T = {
     story: {
       title: "Notre Histoire",
       subtitle: "Tout a commencé par une barbe mal entretenue et une curiosité obstinée.",
-      body1: "En 2019, Rémy ISH, chimiste de formation et barbier du dimanche, ne trouvait aucune huile qui lui correspondait vraiment. Trop lourdes, trop parfumées, trop industrielles. Alors il a commencé à formuler dans sa cuisine de Ganshoren.",
-      body2: "Six mois et 47 versions plus tard, Ambre Noir était née. Une huile qu'il offrait à ses amis, qui revenaient en redemander. Barba Luxe a ouvert ses portes en septembre 2019, dans un petit atelier avenue Charles-Quint.",
-      body3: "Aujourd'hui, chaque flacon est encore fabriqué à la main, en petites séries, avec des ingrédients sourcés directement auprès de producteurs que Rémy ISH connaît personnellement.",
+      body1: "Rémy ISH a passé plus de 8 ans comme développeur full stack senior — chez Toyota Motor Europe notamment — à construire des plateformes e-commerce utilisées dans toute l'Europe. Mais depuis plus de 20 ans, une question le taraudait : comment répondre concrètement à un besoin de sa communauté ?",
+      body2: "Avec le temps, il a évolué vers le QA automation, travaillant aussi bien dans le secteur privé qu'au sein d'institutions publiques belges. Cette rigueur technique — lire le code, comprendre les systèmes, ne rien laisser au hasard — il l'a mise au service d'un projet plus personnel : une huile de barbe formulée avec soin, pour les hommes qui méritent mieux que l'ordinaire.",
+      body3: "Barba Luxe est née de cette exigence-là. Chaque flacon est fabriqué à la main, en petites séries, à Ganshoren. Pas d'automatisation ici — juste du temps, de l'attention, et des ingrédients qu'on a choisis un par un.",
       values: [
         { icon: "🌿", title: "Naturel", desc: "Zéro silicone, zéro paraben. Des formules que vous pouvez prononcer." },
         { icon: "🇧🇪", title: "Belge", desc: "Conçu, fabriqué et conditionné à Ganshoren." },
@@ -259,9 +259,9 @@ const T = {
     story: {
       title: "Our Story",
       subtitle: "It all started with a poorly groomed beard and a stubborn curiosity.",
-      body1: "In 2019, Rémy ISH — a trained chemist and weekend barber — couldn't find an oil that truly worked for him. Too heavy, too perfumed, too industrial. So he started formulating in his kitchen in Ganshoren.",
-      body2: "Six months and 47 versions later, Black Amber was born. An oil he gave to friends, who kept coming back for more. Barba Luxe opened its doors in September 2019, in a small workshop on Avenue Charles-Quint.",
-      body3: "Today, every bottle is still made by hand, in small batches, with ingredients sourced directly from producers Rémy ISH knows personally.",
+      body1: "Rémy ISH spent over 8 years as a senior full stack developer — including at Toyota Motor Europe — building e-commerce platforms used across the continent. But for more than 20 years, one question stayed with him: how to concretely answer a need within his community.",
+      body2: "Over time, he moved into QA automation, working across both private companies and Belgian public institutions. That same technical rigour — reading code, understanding systems, leaving nothing to chance — he brought to something more personal: a beard oil crafted with intention, for men who deserve better than the ordinary.",
+      body3: "Barba Luxe was born from that standard. Every bottle is handmade in small batches in Ganshoren. No automation here — just time, attention, and ingredients chosen one by one.",
       values: [
         { icon: "🌿", title: "Natural", desc: "Zero silicone, zero parabens. Formulas you can actually pronounce." },
         { icon: "🇧🇪", title: "Belgian", desc: "Designed, made, and bottled in Ganshoren." },
@@ -1212,8 +1212,8 @@ async function sendOrderEmails({ lang, cart, shipFields, shipping, shippingCost,
   const total = subtotal + shippingCost;
 
   const cost = {
-    shipping: shippingCost > 0 ? shippingCost.toFixed(2) + " €" : (lang === "fr" ? "Gratuite" : "Free"),
-    tax:      "0,00 €",
+    shipping: shippingCost > 0 ? shippingCost.toFixed(2) + " €" : "Free",
+    tax:      "€0.00",
     total:    total.toFixed(2) + " €",
   };
 
@@ -1223,22 +1223,25 @@ async function sendOrderEmails({ lang, cart, shipFields, shipping, shippingCost,
     cost,
     customer_name:    `${shipFields.firstName} ${shipFields.lastName}`,
     customer_address: `${shipFields.address}, ${shipFields.zip} ${shipFields.city}, ${shipFields.country}`,
+    // TODO: utiliser `lang` pour choisir entre templateClient_fr / templateClient_en
+    // quand les templates FR seront créés dans EmailJS
+    user_lang:        lang,
   };
 
-  // Email au client
+  // Email au client (EN pour l'instant)
   await window.emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateClient, {
     ...commonParams,
     to_name:  shipFields.firstName,
     to_email: shipFields.email,
   });
 
-  // Email à la boutique
+  // Email à la boutique (EN pour l'instant)
   await window.emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateBoutique, {
     ...commonParams,
-    to_name:         "Barba Luxe",
-    to_email:        CONFIG.emailjs.emailBoutique,
-    customer_email:  shipFields.email,
-    customer_phone:  shipFields.phone || (lang === "fr" ? "Non renseigné" : "Not provided"),
+    to_name:        "Barba Luxe",
+    to_email:       CONFIG.emailjs.emailBoutique,
+    customer_email: shipFields.email,
+    customer_phone: shipFields.phone || "Not provided",
   });
 }
 
