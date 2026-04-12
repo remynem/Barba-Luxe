@@ -1,65 +1,50 @@
 // api/create-payment-intent.js
-// Vercel Serverless Function — crée un PaymentIntent Stripe
-// Appelée par le frontend avant d'afficher le formulaire de paiement
+// Vercel Serverless Function — ES Module syntax (compatible Vercel + Vite)
 
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+import Stripe from "stripe";
 
-module.exports = async function handler(req, res) {
-  // CORS — autorise le frontend à appeler cette fonction
+export default async function handler(req, res) {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Preflight OPTIONS
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  // Vérification clé Stripe
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    return res.status(500).json({
+      error: "STRIPE_SECRET_KEY manquante dans les variables Vercel"
+    });
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  const stripe = new Stripe(secretKey);
 
   try {
     const { amount, currency = "eur", cart = [] } = req.body;
 
-    // Validation basique
     if (!amount || typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ error: "Montant invalide" });
     }
 
-    // Montant minimum Stripe : 50 centimes
-    if (amount < 0.5) {
-      return res.status(400).json({ error: "Montant trop faible (minimum 0.50 €)" });
-    }
-
-    // Description lisible pour le dashboard Stripe
     const description = cart.length > 0
       ? cart.map(i => `${i.name} ×${i.qty}`).join(", ")
       : "Commande Barba Luxe";
 
-    // Création du PaymentIntent côté serveur (sécurisé)
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Stripe travaille en centimes
+      amount: Math.round(amount * 100),
       currency,
-      payment_method_types: [
-        "bancontact", // Prioritaire pour la Belgique
-        "card",       // Visa / Mastercard
-      ],
+      payment_method_types: ["bancontact", "card"],
       description,
-      metadata: {
-        source: "barba-luxe-web",
-        items: JSON.stringify(cart.map(i => ({ id: i.id, name: i.name, qty: i.qty }))),
-      },
+      metadata: { source: "barba-luxe-web" },
     });
 
-    // Retourne uniquement le clientSecret au frontend
-    // (jamais la secret key — elle reste côté serveur)
-    return res.status(200).json({
-      clientSecret: paymentIntent.client_secret,
-    });
+    return res.status(200).json({ clientSecret: paymentIntent.client_secret });
 
   } catch (err) {
     console.error("Stripe error:", err.message);
     return res.status(500).json({ error: err.message });
   }
-};
+}
