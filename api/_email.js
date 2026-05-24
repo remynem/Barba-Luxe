@@ -18,6 +18,8 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
   await resend.emails.send({
     from: "Barba Luxe <commandes@barbaluxe.be>",
     to: email,
+    reply_to: "remy@ish-group.eu",
+    bcc: process.env.STORE_EMAIL || "remy@ish-group.eu",
     subject: `Confirmation de commande #${orderNumber} — Barba Luxe`,
     html: `
 <!DOCTYPE html>
@@ -80,7 +82,7 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
         <!-- Footer -->
         <tr><td style="padding:24px 48px;text-align:center;border-top:1px solid rgba(201,169,110,0.1);">
           <p style="font-size:13px;color:rgba(247,242,235,0.4);margin:0 0 8px;">Des questions ? Contactez-nous</p>
-          <a href="mailto:contact@barbaluxe.be" style="color:#C9A96E;font-size:13px;">contact@barbaluxe.be</a>
+          <a href="mailto:remy@ish-group.eu" style="color:#C9A96E;font-size:13px;">remy@ish-group.eu</a>
           <p style="font-size:11px;color:rgba(247,242,235,0.25);margin:20px 0 0;">© 2025 Barba Luxe · Rue du Bailli 12, 1050 Bruxelles</p>
         </td></tr>
 

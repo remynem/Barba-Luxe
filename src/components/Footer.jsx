@@ -25,7 +25,7 @@ export default function Footer({ lang, setPage }) {
         {config.sections.contact && (
           <div className="bl-footer-col">
             <h5>{lang === "fr" ? "Contact" : "Contact"}</h5>
-            <a>contact@barbaluxe.be</a>
+            <a>remy@ish-group.eu</a>
             <a>+32 2 000 00 00</a>
             <a>{t.contact.address}</a>
           </div>

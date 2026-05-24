@@ -8,7 +8,7 @@ export const CONFIG = {
     subBrand: "by ISH",          // sous-marque affichée sous le logo
     tagline: { fr: "Formulées à Bruxelles. Senties partout.", en: "Crafted in Brussels. Felt everywhere." },
     address: { fr: "Rue du Bailli 12, 1050 Bruxelles", en: "12 Rue du Bailli, 1050 Brussels" },
-    email: "contact@barbaluxe.be",
+    email: "remy@ish-group.eu",
     phone: "+32 2 000 00 00",
     since: "2019",
     country: { fr: "Belgique", en: "Belgium" },
