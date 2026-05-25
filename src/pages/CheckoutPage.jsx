@@ -109,12 +109,15 @@ function MollieSection({ lang, total, orderData, domain, onError }) {
   const handleMollie = async (method) => {
     setLoading(method);
     try {
-      const res = await fetch("/api/checkout", {
+      const res  = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "mollie", amount: total, method, orderData, domain }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch { throw new Error(`API ${res.status}: ${text.slice(0, 120)}`); }
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
@@ -222,7 +225,11 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "stripe", amount: Math.round(total * 100), metadata, domain }),
     })
-      .then(r => r.json())
+      .then(async r => {
+        const text = await r.text();
+        try { return JSON.parse(text); }
+        catch { throw new Error(`API ${r.status}: ${text.slice(0, 120)}`); }
+      })
       .then(data => {
         if (data.clientSecret) setClientSecret(data.clientSecret);
         else setPaymentError(data.error || "Erreur d'initialisation du paiement");
