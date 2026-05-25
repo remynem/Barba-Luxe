@@ -68,7 +68,7 @@ export const CONFIG = {
   // ── Fonctionnalités optionnelles ──────────────────────────────────────────
   features: {
     langSwitch: true,
-    devPanel: true,           // désactiver en prod
+    devPanel: false,          // activer manuellement en dev uniquement
     scrollReveal: true,
     cartBadge: true,
     productViewToggle: true,

@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react";
 import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 import { useReveal } from "../hooks/useReveal.js";
 import Footer from "../components/Footer.jsx";
+import { validateContact } from "../utils/validators.js";
 
 export default function ContactPage({ lang, setPage }) {
   const { config, prefillMessage, setPrefillMessage } = useConfig();
+  const { domain } = useTenant();
   const t = T[lang];
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [formErrors, setFormErrors] = useState({});
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
   useReveal();
+
+  // Reset success state when component mounts (e.g. navigating away and back)
+  useEffect(() => { setSent(false); }, []);
 
   useEffect(() => {
     if (prefillMessage) {
@@ -18,9 +27,35 @@ export default function ContactPage({ lang, setPage }) {
     }
   }, [prefillMessage]);
 
-  const handleSubmit = (e) => {
+  const setField = (key, val) => {
+    setForm(f => ({ ...f, [key]: val }));
+    setFormErrors(errs => ({ ...errs, [key]: undefined }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSent(true);
+    const errs = validateContact(form, lang);
+    if (Object.keys(errs).length > 0) { setFormErrors(errs); return; }
+    setSending(true);
+    setSendError("");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, lang, domain: domain || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur inconnue");
+      setSent(true);
+    } catch (err) {
+      setSendError(
+        lang === "fr"
+          ? `Envoi échoué : ${err.message}. Réessayez ou contactez-nous par email.`
+          : `Send failed: ${err.message}. Please retry or email us directly.`
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -38,29 +73,58 @@ export default function ContactPage({ lang, setPage }) {
               <h3 className="bl-form-success-title">{t.contact.success}</h3>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <form onSubmit={handleSubmit} noValidate>
+              <div className="bl-form-row-2">
                 <div className="bl-form-group">
                   <label className="bl-form-label">{t.contact.name}</label>
-                  <input className="bl-form-input" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                  <input
+                    className="bl-form-input"
+                    value={form.name}
+                    onChange={e => setField("name", e.target.value)}
+                    aria-required="true"
+                    style={formErrors.name ? { borderColor: "#E24B4A" } : {}}
+                  />
+                  {formErrors.name && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {formErrors.name}</div>}
                 </div>
                 <div className="bl-form-group">
                   <label className="bl-form-label">{t.contact.email}</label>
-                  <input className="bl-form-input" type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                  <input
+                    className="bl-form-input"
+                    type="email"
+                    value={form.email}
+                    onChange={e => setField("email", e.target.value)}
+                    aria-required="true"
+                    style={formErrors.email ? { borderColor: "#E24B4A" } : {}}
+                  />
+                  {formErrors.email && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {formErrors.email}</div>}
                 </div>
               </div>
               <div className="bl-form-group">
                 <label className="bl-form-label">{t.contact.subject}</label>
-                <select className="bl-form-input bl-form-select" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}>
+                <select className="bl-form-input bl-form-select" value={form.subject} onChange={e => setField("subject", e.target.value)}>
                   <option value="">—</option>
                   {t.contact.subjectOptions.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
               <div className="bl-form-group">
                 <label className="bl-form-label">{t.contact.message}</label>
-                <textarea className="bl-form-input bl-form-textarea" required value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
+                <textarea
+                  className="bl-form-input bl-form-textarea"
+                  value={form.message}
+                  onChange={e => setField("message", e.target.value)}
+                  aria-required="true"
+                  style={formErrors.message ? { borderColor: "#E24B4A" } : {}}
+                />
+                {formErrors.message && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {formErrors.message}</div>}
               </div>
-              <button type="submit" className="bl-form-submit">{t.contact.send}</button>
+              {sendError && (
+                <p style={{ fontSize: "13px", color: "#e57373", marginTop: "4px", lineHeight: 1.5 }}>
+                  ⚠ {sendError}
+                </p>
+              )}
+              <button type="submit" className="bl-form-submit" disabled={sending} style={{ opacity: sending ? 0.7 : 1 }}>
+                {sending ? (lang === "fr" ? "Envoi en cours…" : "Sending…") : t.contact.send}
+              </button>
             </form>
           )}
         </div>
