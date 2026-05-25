@@ -15,6 +15,7 @@ import PrivacyPage from "./pages/PrivacyPage.jsx";
 import LegalPage from "./pages/LegalPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
 import PricingPage from "./pages/PricingPage.jsx";
+import SuperAdminPage from "./pages/SuperAdminPage.jsx";
 
 // ── Inner app (has access to TenantContext) ───────────────────────────────────
 function AppInner() {
@@ -47,6 +48,12 @@ function AppInner() {
   // Detect URL params on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
+    // ?superadmin → platform super admin panel
+    if (params.get("superadmin") !== null) {
+      setPage("superadmin");
+      return;
+    }
 
     // ?admin → admin panel
     if (params.get("admin") !== null || window.location.hash === "#admin") {
@@ -140,9 +147,9 @@ function AppInner() {
     </div>
   );
 
-  const noNavPages  = ["admin"];
-  const noCookiePages = ["admin"];
-  const noCartPages = ["privacy", "legal", "admin", "pricing"];
+  const noNavPages  = ["admin", "superadmin"];
+  const noCookiePages = ["admin", "superadmin"];
+  const noCartPages = ["privacy", "legal", "admin", "pricing", "superadmin"];
 
   return (
     <ConfigContext.Provider value={{ config: mergedConfig, toggleFlag, prefillMessage, setPrefillMessage }}>
@@ -160,8 +167,9 @@ function AppInner() {
         {page === "checkout" && mergedConfig.sections.checkout && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} />}
         {page === "privacy"  && <PrivacyPage lang={lang} setPage={setPage} />}
         {page === "legal"    && <LegalPage lang={lang} setPage={setPage} />}
-        {page === "admin"    && <AdminPage setPage={setPage} />}
-        {page === "pricing"  && <PricingPage lang={lang} setPage={setPage} />}
+        {page === "admin"      && <AdminPage setPage={setPage} />}
+        {page === "pricing"    && <PricingPage lang={lang} setPage={setPage} />}
+        {page === "superadmin" && <SuperAdminPage setPage={setPage} />}
         {!noCookiePages.includes(page) && <CookieBanner lang={lang} setPage={setPage} />}
         <DevPanel />
       </div>
