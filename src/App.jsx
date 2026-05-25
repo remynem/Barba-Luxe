@@ -45,29 +45,47 @@ function AppInner() {
     if (loaded && tenant.plan === "free") loadAdSense();
   }, [loaded, tenant?.plan]);
 
+  // Navigate: keeps ?admin / ?superadmin in URL while on those pages,
+  // cleans the URL when leaving them.
+  const navigate = useCallback((newPage) => {
+    if (newPage === "admin") {
+      window.history.replaceState({}, "", "?admin");
+    } else if (newPage === "superadmin") {
+      window.history.replaceState({}, "", "?superadmin");
+    } else {
+      // Leaving admin/superadmin → clean the URL
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("admin") || params.has("superadmin")) {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+    setPage(newPage);
+  }, []);
+
   // Detect URL params on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
-    // ?superadmin → platform super admin panel
+    // ?superadmin → platform super admin panel (keep param in URL)
     if (params.get("superadmin") !== null) {
       setPage("superadmin");
-      window.history.replaceState({}, "", window.location.pathname);
       return;
     }
 
-    // ?admin → admin panel
+    // ?admin → admin panel (keep param in URL)
     if (params.get("admin") !== null || window.location.hash === "#admin") {
       setPage("admin");
-      window.history.replaceState({}, "", window.location.pathname);
+      // Normalise hash form to query-param form
+      if (window.location.hash === "#admin") {
+        window.history.replaceState({}, "", "?admin");
+      }
       return;
     }
 
-    // ?pro_session=xxx → verify Pro activation from Stripe
+    // ?pro_session=xxx → verify Pro activation from Stripe (clean immediately — contains token)
     const proSession = params.get("pro_session");
     if (proSession && loaded) {
       verifyProSession(proSession);
-      // Clean URL
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, [loaded]);
@@ -84,7 +102,7 @@ function AppInner() {
       const data = await res.json();
       if (res.ok && data.plan === "pro") {
         saveTenant({ plan: "pro", proToken: data.token, proActivatedAt: new Date().toISOString() });
-        setPage("admin");
+        navigate("admin");
         alert("🎉 Plan Pro activé ! Bienvenue parmi nos membres Pro.");
       }
     } catch (e) {
@@ -169,9 +187,9 @@ function AppInner() {
         {page === "checkout" && mergedConfig.sections.checkout && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} />}
         {page === "privacy"  && <PrivacyPage lang={lang} setPage={setPage} />}
         {page === "legal"    && <LegalPage lang={lang} setPage={setPage} />}
-        {page === "admin"      && <AdminPage setPage={setPage} />}
+        {page === "admin"      && <AdminPage setPage={navigate} />}
         {page === "pricing"    && <PricingPage lang={lang} setPage={setPage} />}
-        {page === "superadmin" && <SuperAdminPage setPage={setPage} />}
+        {page === "superadmin" && <SuperAdminPage setPage={navigate} />}
         {!noCookiePages.includes(page) && <CookieBanner lang={lang} setPage={setPage} />}
         <DevPanel />
       </div>
