@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useConfig } from "../data/config.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 import Footer from "../components/Footer.jsx";
 
 const content = {
@@ -131,7 +132,27 @@ const content = {
 
 export default function LegalPage({ lang, setPage }) {
   const [tab, setTab] = useState("mentions");
-  const t = content[lang] || content.fr;
+  const { tenant }    = useTenant();
+  const legal          = tenant?.legal || {};
+  const shopName       = legal.companyName || tenant?.shopName || "Barba Luxe";
+  const address        = legal.address     || "Rue du Bailli 12, 1050 Bruxelles, Belgique";
+  const email          = legal.email       || tenant?.contact?.email || "remy@ish-group.eu";
+  const vatNumber      = legal.vatNumber   || "BE 0000.000.000";
+
+  const hydrate = (text) => text
+    .replace(/Barba Luxe by ISH/g, shopName)
+    .replace(/Barba Luxe/g,        shopName)
+    .replace(/Rue du Bailli 12,\s*1050 Bruxelles,?\s*(Belgique)?/gi, address)
+    .replace(/12 Rue du Bailli,\s*1050 Brussels,?\s*(Belgium)?/gi,   address)
+    .replace(/remy@ish-group\.eu/g, email)
+    .replace(/BE 0000\.000\.000/g,  vatNumber);
+
+  const raw  = content[lang] || content.fr;
+  const hydrateSection = (section) => ({
+    ...section,
+    sections: section.sections.map(s => ({ h: s.h, p: hydrate(s.p) })),
+  });
+  const t    = { ...raw, mentions: hydrateSection(raw.mentions), cgv: hydrateSection(raw.cgv) };
   const data = tab === "mentions" ? t.mentions : t.cgv;
 
   return (

@@ -2,7 +2,29 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function sendOrderConfirmation({ email, name, items, subtotal, shippingCost, total, orderNumber, shippingAddress }) {
+// ── Platform sender (verified Resend domain) ──────────────────────────────────
+const PLATFORM_FROM_DOMAIN = "ish-group.eu";
+const PLATFORM_EMAIL       = `commandes@${PLATFORM_FROM_DOMAIN}`;
+
+// Build the "From" header: "Ahmed Barber <commandes@ish-group.eu>"
+// Display name = tenant's shop name, domain = platform's verified sender.
+function buildFrom(tenant) {
+  const name = tenant?.fromName || tenant?.shopName || "Barba Luxe";
+  return `${name} <${PLATFORM_EMAIL}>`;
+}
+
+// Reply-to = tenant's own contact email so customer replies land in the right inbox.
+function buildReplyTo(tenant) {
+  return tenant?.fromEmail || tenant?.contact?.email || "remy@ish-group.eu";
+}
+
+// ── Order confirmation ────────────────────────────────────────────────────────
+export async function sendOrderConfirmation({
+  email, name, items, subtotal, shippingCost, total, orderNumber, shippingAddress,
+  tenant = {},
+}) {
+  const shopName = tenant.shopName || "Barba Luxe";
+
   const itemsHtml = items.map(i => `
     <tr>
       <td style="padding:8px 0;color:#1C1209;font-size:14px;">${i.name}</td>
@@ -16,11 +38,11 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
     : "";
 
   await resend.emails.send({
-    from: "Barba Luxe <commandes@ish-group.eu>",
-    to: email,
-    reply_to: "remy@ish-group.eu",
-    bcc: process.env.STORE_EMAIL || "remy@ish-group.eu",
-    subject: `Confirmation de commande #${orderNumber} — Barba Luxe`,
+    from:     buildFrom(tenant),
+    to:       email,
+    reply_to: buildReplyTo(tenant),
+    bcc:      process.env.STORE_EMAIL || buildReplyTo(tenant),
+    subject:  `Confirmation de commande #${orderNumber} — ${shopName}`,
     html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -33,9 +55,8 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
         <!-- Header -->
         <tr><td style="padding:40px 48px 32px;text-align:center;border-bottom:1px solid rgba(201,169,110,0.2);">
           <div style="font-family:Georgia,serif;font-size:28px;color:#C9A96E;font-weight:500;letter-spacing:0.05em;">
-            Barba <em>Luxe</em>
+            ${shopName}
           </div>
-          <div style="font-size:10px;letter-spacing:0.2em;color:#8B7355;text-transform:uppercase;margin-top:4px;">by ISH</div>
         </td></tr>
 
         <!-- Confirmation badge -->
@@ -57,16 +78,20 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
             ${itemsHtml}
             <tr>
               <td colspan="3" style="padding:16px 0 8px;border-top:1px solid rgba(201,169,110,0.15);">
-                <table width="100%"><tr>
-                  <td style="font-size:13px;color:rgba(247,242,235,0.5);">Sous-total</td>
-                  <td style="font-size:13px;color:rgba(247,242,235,0.5);text-align:right;">${subtotal.toFixed(2)} €</td>
-                </tr><tr>
-                  <td style="font-size:13px;color:rgba(247,242,235,0.5);padding-top:4px;">Livraison</td>
-                  <td style="font-size:13px;color:rgba(247,242,235,0.5);text-align:right;padding-top:4px;">${shippingCost === 0 ? "Gratuite" : shippingCost.toFixed(2) + " €"}</td>
-                </tr><tr>
-                  <td style="font-size:16px;color:#F7F2EB;padding-top:12px;font-weight:500;">Total</td>
-                  <td style="font-family:Georgia,serif;font-size:20px;color:#C9A96E;text-align:right;padding-top:12px;">${total.toFixed(2)} €</td>
-                </tr></table>
+                <table width="100%">
+                  <tr>
+                    <td style="font-size:13px;color:rgba(247,242,235,0.5);">Sous-total</td>
+                    <td style="font-size:13px;color:rgba(247,242,235,0.5);text-align:right;">${subtotal.toFixed(2)} €</td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:13px;color:rgba(247,242,235,0.5);padding-top:4px;">Livraison</td>
+                    <td style="font-size:13px;color:rgba(247,242,235,0.5);text-align:right;padding-top:4px;">${shippingCost === 0 ? "Gratuite" : shippingCost.toFixed(2) + " €"}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:16px;color:#F7F2EB;padding-top:12px;font-weight:500;">Total</td>
+                    <td style="font-family:Georgia,serif;font-size:20px;color:#C9A96E;text-align:right;padding-top:12px;">${total.toFixed(2)} €</td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>
@@ -82,8 +107,8 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
         <!-- Footer -->
         <tr><td style="padding:24px 48px;text-align:center;border-top:1px solid rgba(201,169,110,0.1);">
           <p style="font-size:13px;color:rgba(247,242,235,0.4);margin:0 0 8px;">Des questions ? Contactez-nous</p>
-          <a href="mailto:remy@ish-group.eu" style="color:#C9A96E;font-size:13px;">remy@ish-group.eu</a>
-          <p style="font-size:11px;color:rgba(247,242,235,0.25);margin:20px 0 0;">© 2025 Barba Luxe · Rue du Bailli 12, 1050 Bruxelles</p>
+          <a href="mailto:${buildReplyTo(tenant)}" style="color:#C9A96E;font-size:13px;">${buildReplyTo(tenant)}</a>
+          <p style="font-size:11px;color:rgba(247,242,235,0.25);margin:20px 0 0;">© ${new Date().getFullYear()} ${shopName}</p>
         </td></tr>
 
       </table>
@@ -95,13 +120,14 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
 }
 
 // ── Welcome email (Pro activation) ───────────────────────────────────────────
-export async function sendWelcomeEmail({ email, shopName, tenantId }) {
+export async function sendWelcomeEmail({ email, shopName, tenantId, tenant = {} }) {
+  const displayName = shopName || tenant.shopName || "votre boutique";
+
   await resend.emails.send({
-    from: "Barba Luxe Platform <commandes@ish-group.eu>",
-    to: email,
+    from:     buildFrom({ shopName: "Barba Luxe Platform", fromName: "Barba Luxe Platform" }),
+    to:       email,
     reply_to: "remy@ish-group.eu",
-    bcc: process.env.STORE_EMAIL || "remy@ish-group.eu",
-    subject: `🎉 Bienvenue sur le Plan Pro — ${shopName}`,
+    subject:  `🎉 Plan Pro activé — ${displayName}`,
     html: `
 <!DOCTYPE html>
 <html lang="fr">
@@ -110,46 +136,39 @@ export async function sendWelcomeEmail({ email, shopName, tenantId }) {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F2EB;padding:40px 0;">
     <tr><td align="center">
       <table width="580" cellpadding="0" cellspacing="0" style="background:#1C1209;border-radius:4px;overflow:hidden;max-width:580px;width:100%;">
-
         <tr><td style="padding:40px 48px 32px;text-align:center;border-bottom:1px solid rgba(201,169,110,0.2);">
-          <div style="font-family:Georgia,serif;font-size:28px;color:#C9A96E;font-weight:500;letter-spacing:0.05em;">
-            Barba <em>Luxe</em>
-          </div>
+          <div style="font-family:Georgia,serif;font-size:28px;color:#C9A96E;font-weight:500;letter-spacing:0.05em;">Barba <em>Luxe</em></div>
           <div style="font-size:10px;letter-spacing:0.2em;color:#8B7355;text-transform:uppercase;margin-top:4px;">Platform</div>
         </td></tr>
-
         <tr><td style="padding:40px 48px;text-align:center;">
           <div style="font-size:48px;margin-bottom:16px;">⭐</div>
           <h1 style="font-family:Georgia,serif;font-size:26px;color:#E8D5B0;margin:0 0 16px;">Plan Pro activé !</h1>
           <p style="color:rgba(247,242,235,0.7);font-size:15px;line-height:1.7;margin:0 0 32px;">
-            Bienvenue, <strong style="color:#C9A96E;">${shopName}</strong> !<br>
-            Votre boutique est maintenant sur le Plan Pro. Vous bénéficiez de :
+            Bienvenue, <strong style="color:#C9A96E;">${displayName}</strong> !<br>
+            Votre boutique est maintenant sur le Plan Pro.
           </p>
           <table width="100%" cellpadding="0" cellspacing="0" style="text-align:left;margin-bottom:32px;">
             ${[
               ["✓ Produits illimités", "Plus aucune limite sur votre catalogue"],
-              ["✓ Sans publicités", "Vos clients profitent d'une expérience épurée"],
-              ["✓ Thèmes premium", "Tous les thèmes débloqués"],
-              ["✓ Support prioritaire", "Nous répondons sous 4h ouvrées"],
-            ].map(([title, desc]) => `
+              ["✓ Sans publicités",    "Vos clients profitent d'une expérience épurée"],
+              ["✓ Support prioritaire","Nous répondons sous 4h ouvrées"],
+            ].map(([t2, d]) => `
             <tr>
               <td style="padding:10px 0;border-bottom:1px solid rgba(201,169,110,0.1);">
-                <span style="color:#C9A96E;font-weight:500;">${title}</span>
-                <span style="color:rgba(247,242,235,0.5);font-size:13px;"> — ${desc}</span>
+                <span style="color:#C9A96E;font-weight:500;">${t2}</span>
+                <span style="color:rgba(247,242,235,0.5);font-size:13px;"> — ${d}</span>
               </td>
             </tr>`).join("")}
           </table>
           <p style="font-size:13px;color:rgba(247,242,235,0.45);margin:0;">
-            Identifiant boutique : <code style="background:rgba(255,255,255,0.07);padding:2px 6px;border-radius:3px;">${tenantId}</code>
+            Boutique : <code style="background:rgba(255,255,255,0.07);padding:2px 6px;border-radius:3px;">${tenantId}</code>
           </p>
         </td></tr>
-
         <tr><td style="padding:24px 48px;text-align:center;border-top:1px solid rgba(201,169,110,0.1);">
           <p style="font-size:13px;color:rgba(247,242,235,0.4);margin:0 0 8px;">Des questions ?</p>
           <a href="mailto:remy@ish-group.eu" style="color:#C9A96E;font-size:13px;">remy@ish-group.eu</a>
-          <p style="font-size:11px;color:rgba(247,242,235,0.25);margin:20px 0 0;">© 2025 Barba Luxe Platform</p>
+          <p style="font-size:11px;color:rgba(247,242,235,0.25);margin:20px 0 0;">© ${new Date().getFullYear()} Barba Luxe Platform</p>
         </td></tr>
-
       </table>
     </td></tr>
   </table>
