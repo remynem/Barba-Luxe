@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { CONFIG } from "../data/config.js";
 import { IMGS } from "../data/images.js";
 
@@ -40,7 +40,7 @@ export const DEFAULT_TENANT = {
     { id:5, name:"Nuit de Cèdre",  name_en:"Cedar Night",    tagline:"Pour les soirs qui méritent un peu d'attention.",      tagline_en:"For evenings that deserve some attention.",         desc:"Cèdre du Liban, benjoin, huile de ricin. La formule la plus enveloppante de la collection.",             desc_en:"Lebanese cedar, benzoin, castor oil. The most enveloping formula in the collection.",                price:36, typeId:"intense", type:"Intense",     type_en:"Intense",    scent:"Boisé & Chaud",   scent_en:"Woody & Warm",   img:"p5_v1", views:["p5_v1","p5_v2"] },
     { id:6, name:"Miel d'Acacia",  name_en:"Acacia Honey",   tagline:"Douceur absolue pour les peaux sensibles.",            tagline_en:"Absolute softness for sensitive skin.",             desc:"Miel d'acacia, calendula, huile d'amande douce. Apaise, protège, nourrit en profondeur.",                desc_en:"Acacia honey, calendula, sweet almond oil. Soothes, protects, deeply nourishes.",                    price:32, typeId:"nourishing", type:"Nourrissante", type_en:"Nourishing", scent:"Doux & Sucré",    scent_en:"Soft & Sweet",   img:"p6_v1", views:["p6_v1","p6_v2"] },
   ],
-  // SHA-256 of "admin" — change via admin panel
+  // SHA-256 of "admin" — only used in localStorage mode (dev)
   adminPasswordHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
 };
 
@@ -68,57 +68,157 @@ export function localizeProducts(products, lang) {
   }));
 }
 
-// ── SHA-256 helper ────────────────────────────────────────────────────────────
+// ── SHA-256 helper (client-side, Web Crypto API) ──────────────────────────────
 async function sha256(msg) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
+
+// ── Detect current tenant domain ──────────────────────────────────────────────
+// Returns null when running on localhost (falls back to localStorage mode).
+function detectDomain() {
+  const host = window.location.hostname;
+  if (!host || host === "localhost" || host === "127.0.0.1" || host.startsWith("192.168.")) {
+    return null; // dev mode → localStorage
+  }
+  return host;
+}
+
+// Session token key in sessionStorage
+function tokenKey(domain) { return `bl_admin_token:${domain}`; }
 
 // ── Context ───────────────────────────────────────────────────────────────────
 const TenantContext = createContext(null);
 
 export function TenantProvider({ children }) {
   const [tenant, setTenantState] = useState(DEFAULT_TENANT);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [isAdmin, setIsAdmin]    = useState(false);
+  const [loaded, setLoaded]      = useState(false);
+  // useKV=true  → config lives in Vercel KV, auth via /api/admin-login
+  // useKV=false → config lives in localStorage, auth via client-side sha256
+  const [useKV, setUseKV]        = useState(false);
+  const domainRef                = useRef(null);
 
-  // Load from localStorage on mount
+  // ── Mount: try API first, fallback to localStorage ──────────────────────────
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        setTenantState(prev => deepMerge(prev, saved));
-      }
-    } catch (_) {}
-    setLoaded(true);
+    const domain = detectDomain();
+    domainRef.current = domain;
+
+    if (domain) {
+      // Production / custom domain → fetch from KV
+      fetch(`/api/tenant?domain=${encodeURIComponent(domain)}`)
+        .then(r => {
+          if (!r.ok) throw new Error("not found");
+          return r.json();
+        })
+        .then(data => {
+          setTenantState(prev => deepMerge(prev, data));
+          setUseKV(true);
+          setLoaded(true);
+        })
+        .catch(() => {
+          // KV tenant not yet created → fall back to localStorage
+          loadFromLocalStorage();
+          setLoaded(true);
+        });
+    } else {
+      // Localhost dev → localStorage
+      loadFromLocalStorage();
+      setLoaded(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const saveTenant = (updates) => {
+  function loadFromLocalStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setTenantState(prev => deepMerge(prev, JSON.parse(raw)));
+    } catch (_) {}
+  }
+
+  // ── Save tenant config ───────────────────────────────────────────────────────
+  const saveTenant = async (updates) => {
     const next = deepMerge(tenant, updates);
     setTenantState(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (_) {}
+
+    if (useKV) {
+      // Persist via API
+      const token = sessionStorage.getItem(tokenKey(domainRef.current));
+      try {
+        await fetch("/api/save-tenant", {
+          method:  "POST",
+          headers: {
+            "Content-Type":  "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ config: next }),
+        });
+      } catch (err) {
+        console.error("[saveTenant] API error:", err);
+      }
+    } else {
+      // Persist to localStorage
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (_) {}
+    }
   };
 
   const resetTenant = () => {
     localStorage.removeItem(STORAGE_KEY);
     setTenantState(DEFAULT_TENANT);
     setIsAdmin(false);
+    if (domainRef.current) {
+      sessionStorage.removeItem(tokenKey(domainRef.current));
+    }
   };
 
+  // ── Admin login ──────────────────────────────────────────────────────────────
   const adminLogin = async (password) => {
-    const hash = await sha256(password);
-    if (hash === tenant.adminPasswordHash) { setIsAdmin(true); return true; }
-    return false;
+    const domain = domainRef.current;
+
+    if (useKV && domain) {
+      // Server-side auth → get session token
+      try {
+        const res = await fetch("/api/admin-login", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ domain, password }),
+        });
+        if (!res.ok) return false;
+        const { token } = await res.json();
+        sessionStorage.setItem(tokenKey(domain), token);
+        setIsAdmin(true);
+        return true;
+      } catch {
+        return false;
+      }
+    } else {
+      // Client-side auth → sha256 compare
+      const hash = await sha256(password);
+      if (hash === tenant.adminPasswordHash) {
+        setIsAdmin(true);
+        return true;
+      }
+      return false;
+    }
   };
 
-  const adminLogout = () => setIsAdmin(false);
+  const adminLogout = () => {
+    setIsAdmin(false);
+    if (domainRef.current) {
+      sessionStorage.removeItem(tokenKey(domainRef.current));
+    }
+  };
 
-  const isPro = tenant.plan === "pro";
+  const isPro        = tenant.plan === "pro";
   const productLimit = isPro ? Infinity : FREE_PRODUCT_LIMIT;
 
   return (
-    <TenantContext.Provider value={{ tenant, saveTenant, resetTenant, isAdmin, adminLogin, adminLogout, isPro, productLimit, loaded }}>
+    <TenantContext.Provider value={{
+      tenant, saveTenant, resetTenant,
+      isAdmin, adminLogin, adminLogout,
+      isPro, productLimit, loaded,
+      useKV, domain: domainRef.current,
+    }}>
       {children}
     </TenantContext.Provider>
   );
