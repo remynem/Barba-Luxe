@@ -3,6 +3,28 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    setupFiles: ['./src/test/setup.js'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      include: ['src/**/*.{js,jsx}', 'api/**/*.js'],
+      exclude: [
+        'src/data/images.js',
+        'src/main.jsx',
+        'src/test/**',
+        'src/__tests__/**',
+        'api/__tests__/**',
+      ],
+      thresholds: { lines: 70, functions: 70, branches: 60 },
+    },
+    // Prevent import.meta.env errors in tests
+    env: {
+      VITE_STRIPE_PUBLISHABLE_KEY: 'pk_test_placeholder',
+    },
+  },
   plugins: [
     react(),
     VitePWA({
