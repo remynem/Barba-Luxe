@@ -5,6 +5,9 @@ import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { validateShipping } from "../utils/validators.js";
+import CountryCombobox from "../components/CountryCombobox.jsx";
+import PhoneInput from "../components/PhoneInput.jsx";
+import { getCountryByCode } from "../data/countries.js";
 
 // ─── Sidebar récapitulatif ────────────────────────────────────────────────────
 function Sidebar({ cart, shipping, t, lang }) {
@@ -188,7 +191,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
   const [paymentError, setPaymentError] = useState("");
 
   // Formulaire livraison
-  const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", address: "", city: "", zip: "", country: "" });
+  const [shipFields, setShipFields] = useState({ firstName: "", lastName: "", address: "", city: "", zip: "", country: "", phone: "", phoneDialCode: "+32" });
   const [shipErrors, setShipErrors] = useState({});
 
   // Stripe : clientSecret pour initialiser Elements
@@ -209,10 +212,15 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
     if (step !== 2 || clientSecret || loadingIntent) return;
     setLoadingIntent(true);
 
+    const fullPhone = shipFields.phone
+      ? `${shipFields.phoneDialCode} ${shipFields.phone}`.trim()
+      : "";
+
     const metadata = {
       orderNumber: String(orderNum),
       customerName: `${shipFields.firstName} ${shipFields.lastName}`,
       customerEmail: shipFields.email || "",
+      customerPhone: fullPhone,
       items: JSON.stringify(cart.map(i => ({ name: i.name, qty: i.qty, price: i.price }))),
       subtotal: String(subtotal),
       shippingCost: String(shippingCost),
@@ -374,10 +382,39 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
               </div>
               <div className="bl-form-group">
                 <label className="bl-form-label">{t.checkout.country}</label>
-                <input className="bl-form-input" value={shipFields.country}
-                  onChange={e => { setShipFields(s => ({...s, country: e.target.value})); setShipErrors(er => ({...er, country: undefined})); }}
-                  style={shipErrors.country ? { borderColor: "#E24B4A" } : {}} />
+                <CountryCombobox
+                  value={shipFields.country}
+                  lang={lang}
+                  error={!!shipErrors.country}
+                  onChange={code => {
+                    const country = getCountryByCode(code);
+                    setShipFields(s => ({
+                      ...s,
+                      country: code,
+                      // Auto-sync dial code when country changes (unless user overrode it)
+                      phoneDialCode: country?.dial || s.phoneDialCode,
+                    }));
+                    setShipErrors(er => ({ ...er, country: undefined }));
+                  }}
+                />
                 {shipErrors.country && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.country}</div>}
+              </div>
+              <div className="bl-form-group">
+                <label className="bl-form-label">
+                  {lang === "fr" ? "Téléphone" : "Phone"}
+                  <span style={{ color: "rgba(247,242,235,0.35)", fontSize: "11px", marginLeft: "6px" }}>
+                    ({lang === "fr" ? "optionnel" : "optional"})
+                  </span>
+                </label>
+                <PhoneInput
+                  phone={shipFields.phone}
+                  onPhone={val => { setShipFields(s => ({...s, phone: val})); setShipErrors(er => ({...er, phone: undefined})); }}
+                  dialCode={shipFields.phoneDialCode}
+                  onDialCode={code => setShipFields(s => ({...s, phoneDialCode: code}))}
+                  lang={lang}
+                  error={!!shipErrors.phone}
+                />
+                {shipErrors.phone && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.phone}</div>}
               </div>
 
               {/* Méthode de livraison */}
@@ -397,7 +434,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
               <div className="bl-checkout-btns">
                 <button className="bl-btn-back" onClick={() => setStep(0)}>{t.checkout.backCart}</button>
                 <button className="bl-btn-primary" onClick={() => {
-                  const errs = validateShipping(shipFields, t);
+                  const errs = validateShipping(shipFields, lang);
                   if (Object.keys(errs).length > 0) { setShipErrors(errs); return; }
                   setStep(2);
                 }}>{t.checkout.continuePayment} →</button>

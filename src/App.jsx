@@ -5,6 +5,7 @@ import { loadAdSense } from "./components/AdBanner.jsx";
 import Nav from "./components/Nav.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
 import DevPanel from "./components/DevPanel.jsx";
+import OfflineBanner from "./components/OfflineBanner.jsx";
 import CookieBanner from "./components/CookieBanner.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import ProductsPage from "./pages/ProductsPage.jsx";
@@ -204,6 +205,7 @@ function AppInner() {
 
   return (
     <ConfigContext.Provider value={{ config: mergedConfig, toggleFlag, prefillMessage, setPrefillMessage }}>
+      <OfflineBanner lang={lang} />
       <div className="bl-app">
         {!noNavPages.includes(page) && (
           <Nav page={page} setPage={setPage} lang={lang} setLang={setLang} cartCount={cartCount} setCartOpen={setCartOpen} />
