@@ -339,7 +339,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
               <h3 style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--gold-light)", marginBottom: "1.5rem" }}>
                 {lang === "fr" ? "Livraison" : "Shipping"}
               </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div className="bl-form-row-2">
                 {[
                   { key: "firstName", label: t.checkout.firstName },
                   { key: "lastName",  label: t.checkout.lastName },
@@ -366,7 +366,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                   style={shipErrors.address ? { borderColor: "#E24B4A" } : {}} />
                 {shipErrors.address && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.address}</div>}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div className="bl-form-row-2">
                 {[
                   { key: "city", label: t.checkout.city },
                   { key: "zip",  label: t.checkout.zip },

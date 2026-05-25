@@ -26,7 +26,7 @@ export default function Nav({ page, setPage, lang, setLang, cartCount, setCartOp
       <nav className={`bl-nav${scrolled ? " scrolled" : ""}`}>
         <div className="bl-logo" onClick={() => nav("home")} style={{ cursor: "pointer", display:"flex", flexDirection:"column", lineHeight:1.1 }}>
           <span>{shopName} <span>{shopItalic}</span></span>
-          <span style={{fontSize:"9px", letterSpacing:"0.2em", color:"var(--mid)", fontFamily:"var(--sans)", fontWeight:400, textTransform:"uppercase", marginTop:"2px"}}>{subBrand}</span>
+          <span className="bl-nav-sub" style={{fontSize:"9px", letterSpacing:"0.2em", color:"var(--mid)", fontFamily:"var(--sans)", fontWeight:400, textTransform:"uppercase", marginTop:"2px"}}>{subBrand}</span>
         </div>
         <div className="bl-nav-links">
           {["home", "products", "story", "contact"].filter(p => {
