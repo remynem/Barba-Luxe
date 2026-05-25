@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 
 export default function Nav({ page, setPage, lang, setLang, cartCount, setCartOpen }) {
   const { config } = useConfig();
+  const { tenant } = useTenant();
   const t = T[lang];
+  const shopName   = tenant?.shopName       || "Barba";
+  const shopItalic = tenant?.shopNameItalic || "Luxe";
+  const subBrand   = tenant?.subBrand       || "by ISH";
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -20,8 +25,8 @@ export default function Nav({ page, setPage, lang, setLang, cartCount, setCartOp
     <>
       <nav className={`bl-nav${scrolled ? " scrolled" : ""}`}>
         <div className="bl-logo" onClick={() => nav("home")} style={{ cursor: "pointer", display:"flex", flexDirection:"column", lineHeight:1.1 }}>
-          <span>Barba <span>Luxe</span></span>
-          <span style={{fontSize:"9px", letterSpacing:"0.2em", color:"var(--mid)", fontFamily:"var(--sans)", fontWeight:400, textTransform:"uppercase", marginTop:"2px"}}>by ISH</span>
+          <span>{shopName} <span>{shopItalic}</span></span>
+          <span style={{fontSize:"9px", letterSpacing:"0.2em", color:"var(--mid)", fontFamily:"var(--sans)", fontWeight:400, textTransform:"uppercase", marginTop:"2px"}}>{subBrand}</span>
         </div>
         <div className="bl-nav-links">
           {["home", "products", "story", "contact"].filter(p => {

@@ -16,7 +16,7 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
     : "";
 
   await resend.emails.send({
-    from: "Barba Luxe <commandes@barbaluxe.be>",
+    from: "Barba Luxe <commandes@ish-group.eu>",
     to: email,
     reply_to: "remy@ish-group.eu",
     bcc: process.env.STORE_EMAIL || "remy@ish-group.eu",
