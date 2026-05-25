@@ -341,6 +341,12 @@ a { text-decoration: none; color: inherit; }
   .bl-reassurance-inner { grid-template-columns: 1fr; }
   .bl-hero-content { padding: 0 6vw; }
   .bl-cart-drawer { width: 100vw; }
+  /* Checkout progress bar: hide inactive labels, shrink line */
+  .bl-progress-label.pending { display: none; }
+  .bl-progress-label.done { display: none; }
+  .bl-progress-line { max-width: 24px; margin: 0 6px; }
+  .bl-progress-step { gap: 6px; font-size: 11px; letter-spacing: 0.04em; }
+  .bl-checkout-title { font-size: 26px; }
 }
 
 /* ── ADMIN PANEL ─────────────────────────────────────────────────────────────── */
