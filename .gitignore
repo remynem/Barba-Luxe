@@ -8,3 +8,11 @@ package-lock.json
 # Capacitor — native projects (regénérer avec: npx cap add ios/android)
 android/
 ios/
+
+# Local secrets & IDE
+.env.local.txt
+.env.*.txt
+.idea/
+.vercel/
+HANDOFF_CLAUDE_CODE_STORES.md
+.claude/worktrees/

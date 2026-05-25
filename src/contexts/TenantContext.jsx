@@ -209,12 +209,32 @@ export function TenantProvider({ children }) {
     }
   };
 
+  // ── Save payment credentials ─────────────────────────────────────────────────
+  const saveCredentials = async (creds) => {
+    if (!useKV) return; // credentials only make sense in KV mode
+    const domain = domainRef.current;
+    const t      = sessionStorage.getItem(tokenKey(domain));
+    const res    = await fetch("/api/save-credentials", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${t}` },
+      body:    JSON.stringify(creds),
+    });
+    if (!res.ok) throw new Error("Failed to save credentials");
+    // Refresh tenant data to get updated hasStripe/hasMollie flags
+    if (domain) {
+      try {
+        const r = await fetch(`/api/tenant?domain=${encodeURIComponent(domain)}`);
+        if (r.ok) { const d = await r.json(); setTenantState(prev => deepMerge(prev, d)); }
+      } catch (_) {}
+    }
+  };
+
   const isPro        = tenant.plan === "pro";
   const productLimit = isPro ? Infinity : FREE_PRODUCT_LIMIT;
 
   return (
     <TenantContext.Provider value={{
-      tenant, saveTenant, resetTenant,
+      tenant, saveTenant, saveCredentials, resetTenant,
       isAdmin, adminLogin, adminLogout,
       isPro, productLimit, loaded,
       useKV, domain: domainRef.current,

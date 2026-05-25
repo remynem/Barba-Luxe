@@ -1,14 +1,17 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTenant, FREE_PRODUCT_LIMIT, resolveImg } from "../contexts/TenantContext.jsx";
 
 const TABS = [
-  { id: "identity", icon: "🏪", label: "Identité" },
-  { id: "theme",    icon: "🎨", label: "Thème" },
-  { id: "products", icon: "📦", label: "Produits" },
-  { id: "contact",  icon: "📬", label: "Contact" },
-  { id: "shipping", icon: "🚚", label: "Livraison" },
-  { id: "password", icon: "🔒", label: "Sécurité" },
-  { id: "plan",     icon: "⭐", label: "Abonnement" },
+  { id: "identity",    icon: "🏪", label: "Identité" },
+  { id: "theme",       icon: "🎨", label: "Thème" },
+  { id: "products",    icon: "📦", label: "Produits" },
+  { id: "contact",     icon: "📬", label: "Contact" },
+  { id: "shipping",    icon: "🚚", label: "Livraison" },
+  { id: "payments",    icon: "💳", label: "Paiements" },
+  { id: "orders",      icon: "📋", label: "Commandes" },
+  { id: "legal",       icon: "⚖️",  label: "Légal" },
+  { id: "password",    icon: "🔒", label: "Sécurité" },
+  { id: "plan",        icon: "⭐", label: "Abonnement" },
 ];
 
 // ── Admin Login Screen ────────────────────────────────────────────────────────
@@ -584,9 +587,243 @@ function SaveBar({ onSave, saved }) {
   );
 }
 
+// ── Payments Section ──────────────────────────────────────────────────────────
+function PaymentsSection({ tenant, useKV }) {
+  const { saveCredentials } = useTenant();
+  const [form, setForm] = useState({
+    stripePublishableKey: tenant.stripePublishableKey || "",
+    stripeSecretKey:      "",  // never pre-filled (secret)
+    mollieApiKey:         "",  // never pre-filled (secret)
+    fromName:             tenant.fromName  || tenant.shopName || "",
+    fromEmail:            tenant.fromEmail || tenant.contact?.email || "",
+  });
+  const [saved, setSaved]   = useState(false);
+  const [error, setError]   = useState("");
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSave = async () => {
+    setError("");
+    try {
+      const payload = {
+        fromName:  form.fromName,
+        fromEmail: form.fromEmail,
+      };
+      if (form.stripePublishableKey) payload.stripePublishableKey = form.stripePublishableKey;
+      if (form.stripeSecretKey)      payload.stripeSecretKey      = form.stripeSecretKey;
+      if (form.mollieApiKey)         payload.mollieApiKey         = form.mollieApiKey;
+      await saveCredentials(payload);
+      setSaved(true);
+      setForm(f => ({ ...f, stripeSecretKey: "", mollieApiKey: "" })); // clear secrets
+      setTimeout(() => setSaved(false), 3000);
+    } catch (e) {
+      setError(e.message || "Erreur lors de la sauvegarde");
+    }
+  };
+
+  if (!useKV) {
+    return (
+      <div className="bl-admin-section">
+        <h2 className="bl-admin-section-title">Paiements</h2>
+        <div style={{ background: "rgba(201,169,110,0.08)", border: "1px solid rgba(201,169,110,0.2)", borderRadius: "8px", padding: "20px", color: "rgba(247,242,235,0.7)", fontSize: "14px", lineHeight: 1.7 }}>
+          <p style={{ margin: "0 0 8px" }}>💡 La configuration des clés de paiement nécessite un domaine personnalisé et Vercel KV.</p>
+          <p style={{ margin: 0, fontSize: "12px", color: "rgba(247,242,235,0.4)" }}>En développement local, les clés sont lues depuis les variables d'environnement.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bl-admin-section">
+      <h2 className="bl-admin-section-title">Paiements</h2>
+      <p style={{ color: "rgba(247,242,235,0.5)", fontSize: "13px", marginBottom: "24px", lineHeight: 1.6 }}>
+        Configurez vos propres clés de paiement. Les revenus ira directement sur vos comptes Stripe et Mollie.
+        Les clés secrètes sont chiffrées avant stockage.
+      </p>
+
+      <h3 className="bl-admin-subsection">Email d'expédition</h3>
+      <div className="bl-admin-grid">
+        <AdminField label="Nom affiché (expéditeur)" note="ex: Ahmed Barber">
+          <input className="bl-admin-input" value={form.fromName} onChange={e => set("fromName", e.target.value)} placeholder="Barba Luxe" />
+        </AdminField>
+        <AdminField label="Email de réponse client" note="votre email de contact">
+          <input className="bl-admin-input" type="email" value={form.fromEmail} onChange={e => set("fromEmail", e.target.value)} placeholder="contact@votre-boutique.be" />
+        </AdminField>
+      </div>
+
+      <h3 className="bl-admin-subsection" style={{ marginTop: "28px" }}>
+        Stripe {tenant.hasStripe && <span style={{ color: "#2ecc71", fontSize: "12px", marginLeft: "8px" }}>✓ configuré</span>}
+      </h3>
+      <div className="bl-admin-grid">
+        <AdminField label="Clé publique (pk_live_...)" note="visible dans le tableau de bord Stripe">
+          <input className="bl-admin-input" value={form.stripePublishableKey} onChange={e => set("stripePublishableKey", e.target.value)} placeholder="pk_live_..." />
+        </AdminField>
+        <AdminField label="Clé secrète (sk_live_...)" note="chiffrée — laissez vide pour ne pas modifier">
+          <input className="bl-admin-input" type="password" value={form.stripeSecretKey} onChange={e => set("stripeSecretKey", e.target.value)} placeholder={tenant.hasStripe ? "••••••••• (déjà configuré)" : "sk_live_..."} />
+        </AdminField>
+      </div>
+
+      <h3 className="bl-admin-subsection" style={{ marginTop: "28px" }}>
+        Mollie {tenant.hasMollie && <span style={{ color: "#2ecc71", fontSize: "12px", marginLeft: "8px" }}>✓ configuré</span>}
+      </h3>
+      <AdminField label="Clé API Mollie (live_...)" note="chiffrée — laissez vide pour ne pas modifier" style={{ maxWidth: "420px" }}>
+        <input className="bl-admin-input" type="password" value={form.mollieApiKey} onChange={e => set("mollieApiKey", e.target.value)} placeholder={tenant.hasMollie ? "••••••••• (déjà configuré)" : "live_..."} />
+      </AdminField>
+
+      {error && <p className="bl-admin-error" style={{ marginTop: "12px" }}>{error}</p>}
+      <SaveBar onSave={handleSave} saved={saved} />
+    </div>
+  );
+}
+
+// ── Orders Section ────────────────────────────────────────────────────────────
+function OrdersSection({ useKV }) {
+  const [orders, setOrders]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage2]      = useState(0);
+  const { domain } = useTenant();
+
+  const load = async (p = 0) => {
+    setLoading(true);
+    try {
+      const token = domain ? sessionStorage.getItem(`bl_admin_token:${domain}`) : null;
+      if (!token) { setOrders([]); setLoading(false); return; }
+      const res  = await fetch(`/api/orders?page=${p}&limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) { const d = await res.json(); setOrders(d.orders || []); }
+    } catch (_) {}
+    setLoading(false);
+  };
+
+  useEffect(() => { if (useKV) load(0); else setLoading(false); }, [useKV]);
+
+  if (!useKV) {
+    return (
+      <div className="bl-admin-section">
+        <h2 className="bl-admin-section-title">Commandes</h2>
+        <div style={{ background: "rgba(201,169,110,0.08)", border: "1px solid rgba(201,169,110,0.2)", borderRadius: "8px", padding: "20px", color: "rgba(247,242,235,0.7)", fontSize: "14px" }}>
+          💡 L'historique des commandes nécessite un domaine personnalisé et Vercel KV.
+        </div>
+      </div>
+    );
+  }
+
+  const revenue = orders.reduce((s, o) => s + (parseFloat(o.total) || 0), 0);
+
+  return (
+    <div className="bl-admin-section">
+      <h2 className="bl-admin-section-title">Commandes</h2>
+
+      {/* Stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+        {[
+          { label: "Commandes", value: orders.length, icon: "📋" },
+          { label: "Chiffre d'affaires", value: `${revenue.toFixed(2)} €`, icon: "💰" },
+        ].map(s => (
+          <div key={s.label} style={{ background: "rgba(201,169,110,0.06)", border: "1px solid rgba(201,169,110,0.15)", borderRadius: "8px", padding: "16px", textAlign: "center" }}>
+            <div style={{ fontSize: "22px", marginBottom: "4px" }}>{s.icon}</div>
+            <div style={{ fontSize: "20px", fontWeight: "bold", color: "#c9a96e", fontFamily: "Georgia,serif" }}>{s.value}</div>
+            <div style={{ fontSize: "11px", color: "rgba(247,242,235,0.4)", marginTop: "2px" }}>{s.label}</div>
+          </div>
+        ))}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+          <button onClick={() => load(0)} style={{ background: "transparent", border: "1px solid rgba(201,169,110,0.3)", color: "rgba(247,242,235,0.6)", padding: "8px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>
+            ↻ Actualiser
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "32px", color: "rgba(247,242,235,0.4)" }}>Chargement…</div>
+      ) : orders.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px", border: "1px dashed rgba(201,169,110,0.2)", borderRadius: "8px", color: "rgba(247,242,235,0.4)" }}>
+          <div style={{ fontSize: "36px", marginBottom: "12px" }}>📭</div>
+          <p>Aucune commande pour le moment.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {orders.map((o, idx) => (
+            <div key={o.orderNumber || idx} style={{ background: "rgba(247,242,235,0.03)", border: "1px solid rgba(201,169,110,0.15)", borderRadius: "8px", padding: "16px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+              <div style={{ flex: 1, minWidth: "150px" }}>
+                <div style={{ fontSize: "14px", color: "#f7f2eb", fontWeight: "500" }}>
+                  #{o.orderNumber}
+                  <span style={{ marginLeft: "10px", fontSize: "11px", padding: "2px 8px", background: "rgba(46,204,113,0.15)", color: "#2ecc71", borderRadius: "10px", border: "1px solid rgba(46,204,113,0.3)" }}>
+                    {o.status || "payé"}
+                  </span>
+                </div>
+                <div style={{ fontSize: "12px", color: "rgba(247,242,235,0.45)", marginTop: "4px" }}>
+                  {o.customerName} · {o.customerEmail}
+                </div>
+              </div>
+              <div style={{ fontSize: "12px", color: "rgba(247,242,235,0.45)", textAlign: "center" }}>
+                <div>{o.paymentMethod === "mollie" ? "🏦 Mollie" : "💳 Stripe"}</div>
+                <div style={{ marginTop: "2px" }}>{o.paidAt ? new Date(o.paidAt).toLocaleDateString("fr-BE") : "—"}</div>
+              </div>
+              <div style={{ fontFamily: "Georgia,serif", fontSize: "18px", color: "#c9a96e", minWidth: "80px", textAlign: "right" }}>
+                {parseFloat(o.total || 0).toFixed(2)} €
+              </div>
+            </div>
+          ))}
+          {/* Pagination */}
+          <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginTop: "8px" }}>
+            <button disabled={page === 0} onClick={() => { setPage2(p => p - 1); load(page - 1); }} style={{ padding: "6px 14px", background: "transparent", border: "1px solid rgba(201,169,110,0.3)", color: "#c9a96e", borderRadius: "6px", cursor: page === 0 ? "not-allowed" : "pointer", opacity: page === 0 ? 0.4 : 1 }}>← Préc.</button>
+            <button disabled={orders.length < 20} onClick={() => { setPage2(p => p + 1); load(page + 1); }} style={{ padding: "6px 14px", background: "transparent", border: "1px solid rgba(201,169,110,0.3)", color: "#c9a96e", borderRadius: "6px", cursor: orders.length < 20 ? "not-allowed" : "pointer", opacity: orders.length < 20 ? 0.4 : 1 }}>Suiv. →</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Legal Section ─────────────────────────────────────────────────────────────
+function LegalSection({ tenant, onSave }) {
+  const [form, setForm] = useState({
+    companyName:  tenant.legal?.companyName  || tenant.shopName || "",
+    vatNumber:    tenant.legal?.vatNumber    || "",
+    address:      tenant.legal?.address      || tenant.contact?.address?.fr || "",
+    email:        tenant.legal?.email        || tenant.contact?.email || "",
+    phone:        tenant.legal?.phone        || tenant.contact?.phone || "",
+  });
+  const [saved, setSaved] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSave = () => {
+    onSave({ legal: form });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  return (
+    <div className="bl-admin-section">
+      <h2 className="bl-admin-section-title">Informations légales</h2>
+      <p style={{ color: "rgba(247,242,235,0.5)", fontSize: "13px", marginBottom: "24px", lineHeight: 1.6 }}>
+        Ces informations apparaîtront dans vos pages Politique de confidentialité, CGV et Mentions légales.
+      </p>
+      <div className="bl-admin-grid">
+        <AdminField label="Nom de la société / raison sociale" required>
+          <input className="bl-admin-input" value={form.companyName} onChange={e => set("companyName", e.target.value)} />
+        </AdminField>
+        <AdminField label="Numéro d'entreprise (TVA / BCE)">
+          <input className="bl-admin-input" value={form.vatNumber} onChange={e => set("vatNumber", e.target.value)} placeholder="BE 0000.000.000" />
+        </AdminField>
+        <AdminField label="Adresse siège social" required>
+          <input className="bl-admin-input" value={form.address} onChange={e => set("address", e.target.value)} placeholder="Rue du Temple 5, 1000 Bruxelles" />
+        </AdminField>
+        <AdminField label="Email de contact légal" required>
+          <input className="bl-admin-input" type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="contact@votre-boutique.be" />
+        </AdminField>
+        <AdminField label="Téléphone">
+          <input className="bl-admin-input" value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+32 2 000 00 00" />
+        </AdminField>
+      </div>
+      <SaveBar onSave={handleSave} saved={saved} />
+    </div>
+  );
+}
+
 // ── Main AdminPage ────────────────────────────────────────────────────────────
 export default function AdminPage({ setPage }) {
-  const { tenant, saveTenant, resetTenant, isAdmin, adminLogin, adminLogout, isPro, productLimit } = useTenant();
+  const { tenant, saveTenant, resetTenant, isAdmin, adminLogin, adminLogout, isPro, productLimit, useKV } = useTenant();
   const [tab, setTab] = useState("identity");
 
   if (!isAdmin) {
@@ -626,6 +863,9 @@ export default function AdminPage({ setPage }) {
         {tab === "products" && <ProductsSection tenant={tenant} onSave={saveTenant} isPro={isPro} productLimit={productLimit} />}
         {tab === "contact"  && <ContactSection tenant={tenant} onSave={saveTenant} />}
         {tab === "shipping" && <ShippingSection tenant={tenant} onSave={saveTenant} />}
+        {tab === "payments" && <PaymentsSection tenant={tenant} useKV={useKV} />}
+        {tab === "orders"   && <OrdersSection useKV={useKV} />}
+        {tab === "legal"    && <LegalSection tenant={tenant} onSave={saveTenant} />}
         {tab === "password" && <PasswordSection onSave={saveTenant} />}
         {tab === "plan"     && <PlanSection tenant={tenant} isPro={isPro} onSave={saveTenant} resetTenant={resetTenant} />}
       </main>

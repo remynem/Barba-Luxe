@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { stripePromise } from "../lib/stripe.js";
+import { getStripePromise } from "../lib/stripe.js";
 import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 import { validateShipping } from "../utils/validators.js";
 
 // ─── Sidebar récapitulatif ────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ const MOLLIE_METHODS = [
   { id: "kbc",        label: "KBC / CBC",  icon: "🟢" },
 ];
 
-function MollieSection({ lang, total, orderData, onError }) {
+function MollieSection({ lang, total, orderData, domain, onError }) {
   const [loading, setLoading] = useState(null);
 
   const handleMollie = async (method) => {
@@ -111,7 +112,7 @@ function MollieSection({ lang, total, orderData, onError }) {
       const res = await fetch("/api/create-mollie-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total, method, orderData }),
+        body: JSON.stringify({ amount: total, method, orderData, domain }),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
@@ -170,6 +171,12 @@ function MollieSection({ lang, total, orderData, onError }) {
 // ─── CheckoutPage principal ───────────────────────────────────────────────────
 export default function CheckoutPage({ lang, cart, setCart, setPage }) {
   const { config } = useConfig();
+  const { tenant, domain } = useTenant();
+  // Use tenant's Stripe publishable key if configured, fallback to platform key
+  const stripePromise = useMemo(
+    () => getStripePromise(tenant?.stripePublishableKey),
+    [tenant?.stripePublishableKey]
+  );
   const t = T[lang];
   const [step, setStep] = useState(0);
   const [shipping, setShipping] = useState("standard");
@@ -213,7 +220,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
     fetch("/api/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: Math.round(total * 100), metadata }),
+      body: JSON.stringify({ amount: Math.round(total * 100), metadata, domain }),
     })
       .then(r => r.json())
       .then(data => {
@@ -439,7 +446,30 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                     <StripePaymentForm
                       lang={lang}
                       total={total}
-                      onSuccess={() => setOrdered(true)}
+                      onSuccess={() => {
+                        // Record order in KV (best-effort — payment already succeeded)
+                        if (domain) {
+                          fetch("/api/orders", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              domain,
+                              order: {
+                                orderNumber: String(orderNum),
+                                customerName: `${shipFields.firstName} ${shipFields.lastName}`,
+                                customerEmail: shipFields.email || "",
+                                items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+                                subtotal, shippingCost, total,
+                                shippingAddress: shipFields,
+                                paymentMethod: "stripe",
+                                status: "paid",
+                                paidAt: new Date().toISOString(),
+                              },
+                            }),
+                          }).catch(() => {});
+                        }
+                        setOrdered(true);
+                      }}
                       onError={setPaymentError}
                     />
                   </Elements>
@@ -456,6 +486,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                 <MollieSection
                   lang={lang}
                   total={total}
+                  domain={domain}
                   orderData={{
                     orderNumber: String(orderNum),
                     customerName: `${shipFields.firstName} ${shipFields.lastName}`,
