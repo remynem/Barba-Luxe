@@ -52,12 +52,14 @@ function AppInner() {
     // ?superadmin → platform super admin panel
     if (params.get("superadmin") !== null) {
       setPage("superadmin");
+      window.history.replaceState({}, "", window.location.pathname);
       return;
     }
 
     // ?admin → admin panel
     if (params.get("admin") !== null || window.location.hash === "#admin") {
       setPage("admin");
+      window.history.replaceState({}, "", window.location.pathname);
       return;
     }
 
