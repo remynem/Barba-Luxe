@@ -3,6 +3,7 @@ import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
 import { useTenant } from "../contexts/TenantContext.jsx";
 import { useReveal } from "../hooks/useReveal.js";
+import AdBanner from "../components/AdBanner.jsx";
 import Footer from "../components/Footer.jsx";
 
 export default function HomePage({ setPage, lang }) {
@@ -75,6 +76,9 @@ export default function HomePage({ setPage, lang }) {
           ))}
         </div>
       </div>}
+
+      {/* Ad banner — Free plan only, between reassurance and footer */}
+      <AdBanner slot="home-mid" format="horizontal" className="bl-ad-home-mid" />
 
       <Footer lang={lang} setPage={setPage} />
     </div>

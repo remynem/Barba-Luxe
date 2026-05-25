@@ -3,6 +3,7 @@ import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
 import { useTenant, localizeProducts } from "../contexts/TenantContext.jsx";
 import { useReveal } from "../hooks/useReveal.js";
+import AdBanner from "../components/AdBanner.jsx";
 import Footer from "../components/Footer.jsx";
 
 export default function ProductsPage({ lang, addToCart }) {
@@ -43,6 +44,9 @@ export default function ProductsPage({ lang, addToCart }) {
           ))}
         </div>}
       </div>
+      {/* Ad banner — Free plan only, above product grid */}
+      <AdBanner slot="products-top" format="horizontal" className="bl-ad-products-top" />
+
       <div className="bl-products-grid">
         {filtered.map((item, i) => {
           const vi = activeViews[item.id] || 0;

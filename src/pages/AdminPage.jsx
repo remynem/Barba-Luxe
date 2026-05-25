@@ -458,9 +458,50 @@ function PasswordSection({ onSave }) {
 
 // ── Plan Section ──────────────────────────────────────────────────────────────
 function PlanSection({ tenant, isPro, onSave, resetTenant }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState("");
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/create-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId:   tenant.id || "default",
+          shopName:   `${tenant.shopName} ${tenant.shopNameItalic}`,
+          email:      tenant.contact?.email || "",
+          successUrl: window.location.origin,
+          cancelUrl:  window.location.origin,
+        }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Erreur lors du paiement.");
+      }
+    } catch (e) {
+      setError("Erreur réseau. Vérifiez votre connexion.");
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="bl-admin-section">
       <h2 className="bl-admin-section-title">Abonnement</h2>
+
+      {isPro && (
+        <div className="bl-admin-pro-badge">
+          <span>⭐</span>
+          <div>
+            <strong>Plan Pro actif</strong>
+            <p>Produits illimités · Sans publicités · Support prioritaire</p>
+          </div>
+        </div>
+      )}
+
       <div className="bl-admin-plan-cards">
         <div className={`bl-admin-plan-card${!isPro ? " active" : ""}`}>
           <h3>Gratuit</h3>
@@ -468,8 +509,8 @@ function PlanSection({ tenant, isPro, onSave, resetTenant }) {
           <ul>
             <li>✓ Jusqu'à {FREE_PRODUCT_LIMIT} produits</li>
             <li>✓ Panel admin complet</li>
-            <li>✓ Paiement Stripe / Mollie</li>
-            <li>✗ Publicités tierces</li>
+            <li>✓ Paiements Stripe / Mollie</li>
+            <li>✗ Publicités dans la boutique</li>
           </ul>
           {!isPro && <span className="bl-admin-plan-badge">Plan actuel</span>}
         </div>
@@ -478,17 +519,22 @@ function PlanSection({ tenant, isPro, onSave, resetTenant }) {
           <p className="bl-admin-plan-price">29€ / mois</p>
           <ul>
             <li>✓ Produits illimités</li>
-            <li>✓ Thèmes premium</li>
             <li>✓ Analytics avancés</li>
             <li>✓ Sans publicités</li>
-            <li>✓ Support prioritaire</li>
+            <li>✓ Support prioritaire (4h)</li>
           </ul>
           {isPro ? (
             <span className="bl-admin-plan-badge">Plan actuel</span>
           ) : (
-            <button className="bl-admin-btn-primary" onClick={() => { onSave({ plan: "pro" }); }}>
-              Passer en Pro
-            </button>
+            <>
+              {error && <p className="bl-admin-error" style={{ marginBottom:"10px" }}>{error}</p>}
+              <button className="bl-admin-btn-primary" onClick={handleUpgrade} disabled={loading}>
+                {loading ? "Redirection Stripe…" : "Passer en Pro — 29€/mois"}
+              </button>
+              <p style={{ fontSize:"11px", color:"rgba(247,242,235,0.3)", marginTop:"10px" }}>
+                Sans engagement · Annulez à tout moment
+              </p>
+            </>
           )}
         </div>
       </div>

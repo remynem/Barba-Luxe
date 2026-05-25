@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { CONFIG, ConfigContext } from "./data/config.js";
 import { TenantProvider, useTenant } from "./contexts/TenantContext.jsx";
+import { loadAdSense } from "./components/AdBanner.jsx";
 import Nav from "./components/Nav.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
 import DevPanel from "./components/DevPanel.jsx";
@@ -13,16 +14,18 @@ import CheckoutPage from "./pages/CheckoutPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
 import LegalPage from "./pages/LegalPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
+import PricingPage from "./pages/PricingPage.jsx";
 
 // ── Inner app (has access to TenantContext) ───────────────────────────────────
 function AppInner() {
-  const { tenant, loaded } = useTenant();
+  const { tenant, saveTenant, loaded } = useTenant();
   const [lang, setLang] = useState("fr");
   const [page, setPage] = useState("home");
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [config, setConfig] = useState(CONFIG);
   const [prefillMessage, setPrefillMessage] = useState("");
+  const [proActivating, setProActivating] = useState(false);
 
   // Apply tenant theme colors as CSS variables
   useEffect(() => {
@@ -32,18 +35,54 @@ function AppInner() {
     if (primary) root.style.setProperty("--gold",  primary);
     if (night)   root.style.setProperty("--night", night);
     if (cream)   root.style.setProperty("--cream", cream);
-    // Derived tones
     if (primary) root.style.setProperty("--gold-light", lighten(primary, 0.25));
     if (night)   root.style.setProperty("--wood",  darken(night, -0.15));
   }, [loaded, tenant?.theme]);
 
-  // Detect ?admin or #admin in URL to navigate to admin
+  // Load AdSense for Free plan (only once)
+  useEffect(() => {
+    if (loaded && tenant.plan === "free") loadAdSense();
+  }, [loaded, tenant?.plan]);
+
+  // Detect URL params on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
+    // ?admin → admin panel
     if (params.get("admin") !== null || window.location.hash === "#admin") {
       setPage("admin");
+      return;
     }
-  }, []);
+
+    // ?pro_session=xxx → verify Pro activation from Stripe
+    const proSession = params.get("pro_session");
+    if (proSession && loaded) {
+      verifyProSession(proSession);
+      // Clean URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [loaded]);
+
+  // Verify Stripe session → activate Pro plan
+  const verifyProSession = async (sessionId) => {
+    setProActivating(true);
+    try {
+      const res = await fetch("/api/verify-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.plan === "pro") {
+        saveTenant({ plan: "pro", proToken: data.token, proActivatedAt: new Date().toISOString() });
+        setPage("admin");
+        alert("🎉 Plan Pro activé ! Bienvenue parmi nos membres Pro.");
+      }
+    } catch (e) {
+      console.error("Pro verification error:", e);
+    }
+    setProActivating(false);
+  };
 
   const addToCart = useCallback((item) => {
     setCart(c => {
@@ -56,27 +95,21 @@ function AppInner() {
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
   const toggleFlag = (group, key) => {
-    setConfig(prev => ({
-      ...prev,
-      [group]: { ...prev[group], [key]: !prev[group][key] }
-    }));
+    setConfig(prev => ({ ...prev, [group]: { ...prev[group], [key]: !prev[group][key] } }));
   };
 
   useEffect(() => {
     const pageToSection = { products: "products", story: "story", contact: "contact", checkout: "checkout" };
     const section = pageToSection[page];
-    if (section && config.sections[section] === false) {
-      setPage("home");
-      window.scrollTo(0, 0);
-    }
+    if (section && config.sections[section] === false) { setPage("home"); window.scrollTo(0, 0); }
   }, [config, page]);
 
-  // Merge tenant config into ConfigContext value
+  // Merge tenant config into ConfigContext
   const mergedConfig = {
     ...config,
     brand: {
       ...config.brand,
-      name:    tenant.shopName,
+      name:       tenant.shopName,
       nameItalic: tenant.shopNameItalic,
       subBrand:   tenant.subBrand,
       tagline:    tenant.tagline,
@@ -94,17 +127,30 @@ function AppInner() {
     },
   };
 
-  if (!loaded) return null;
+  if (!loaded) return (
+    <div style={{ minHeight:"100vh", background:"var(--night)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ fontFamily:"Georgia,serif", color:"var(--gold)", fontSize:"22px" }}>Barba <em>Luxe</em></div>
+    </div>
+  );
 
-  const legalPages = ["privacy", "legal", "admin"];
+  if (proActivating) return (
+    <div style={{ minHeight:"100vh", background:"var(--night)", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:"16px" }}>
+      <div style={{ fontFamily:"Georgia,serif", color:"var(--gold)", fontSize:"22px" }}>⭐ Activation Plan Pro…</div>
+      <p style={{ color:"rgba(247,242,235,0.5)", fontSize:"14px" }}>Vérification du paiement en cours</p>
+    </div>
+  );
+
+  const noNavPages  = ["admin"];
+  const noCookiePages = ["admin"];
+  const noCartPages = ["privacy", "legal", "admin", "pricing"];
 
   return (
     <ConfigContext.Provider value={{ config: mergedConfig, toggleFlag, prefillMessage, setPrefillMessage }}>
       <div className="bl-app">
-        {page !== "admin" && (
+        {!noNavPages.includes(page) && (
           <Nav page={page} setPage={setPage} lang={lang} setLang={setLang} cartCount={cartCount} setCartOpen={setCartOpen} />
         )}
-        {mergedConfig.sections.cartDrawer && !legalPages.includes(page) && (
+        {mergedConfig.sections.cartDrawer && !noCartPages.includes(page) && (
           <CartDrawer open={cartOpen} setOpen={setCartOpen} cart={cart} setCart={setCart} lang={lang} setPage={setPage} />
         )}
         {page === "home"     && <HomePage setPage={setPage} lang={lang} />}
@@ -115,7 +161,8 @@ function AppInner() {
         {page === "privacy"  && <PrivacyPage lang={lang} setPage={setPage} />}
         {page === "legal"    && <LegalPage lang={lang} setPage={setPage} />}
         {page === "admin"    && <AdminPage setPage={setPage} />}
-        {page !== "admin" && <CookieBanner lang={lang} setPage={setPage} />}
+        {page === "pricing"  && <PricingPage lang={lang} setPage={setPage} />}
+        {!noCookiePages.includes(page) && <CookieBanner lang={lang} setPage={setPage} />}
         <DevPanel />
       </div>
     </ConfigContext.Provider>
