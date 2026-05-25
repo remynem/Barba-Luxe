@@ -5,10 +5,12 @@ import { createClient } from "@vercel/kv";
 let _kv;
 function kv() {
   if (!_kv) {
-    _kv = createClient({
-      url:   process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
+    const url   = process.env.KV_REST_API_URL
+                || process.env.UPSTASH_REDIS_REST_KV_REST_API_URL
+                || process.env.UPSTASH_REDIS_REST_KV_URL;
+    const token = process.env.KV_REST_API_TOKEN
+                || process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
+    _kv = createClient({ url, token });
   }
   return _kv;
 }
