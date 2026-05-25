@@ -78,8 +78,14 @@ async function sha256(msg) {
 // Returns null when running on localhost (falls back to localStorage mode).
 function detectDomain() {
   const host = window.location.hostname;
-  if (!host || host === "localhost" || host === "127.0.0.1" || host.startsWith("192.168.")) {
-    return null; // dev mode → localStorage
+  if (
+    !host ||
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.startsWith("192.168.") ||
+    host.endsWith(".vercel.app")   // platform preview URLs → localStorage/demo mode
+  ) {
+    return null;
   }
   return host;
 }
