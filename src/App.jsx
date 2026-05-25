@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { CONFIG, ConfigContext } from "./data/config.js";
 import { TenantProvider, useTenant } from "./contexts/TenantContext.jsx";
 import { loadAdSense } from "./components/AdBanner.jsx";
@@ -22,7 +22,9 @@ function AppInner() {
   const { tenant, saveTenant, loaded } = useTenant();
   const [lang, setLang] = useState("fr");
   const [page, setPage] = useState("home");
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("bl_cart") || "[]"); } catch { return []; }
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [config, setConfig] = useState(CONFIG);
   const [prefillMessage, setPrefillMessage] = useState("");
@@ -40,9 +42,16 @@ function AppInner() {
     if (night)   root.style.setProperty("--wood",  darken(night, -0.15));
   }, [loaded, tenant?.theme]);
 
-  // Load AdSense for Free plan (only once)
+  // Persist cart to localStorage on every change
   useEffect(() => {
-    if (loaded && tenant.plan === "free") loadAdSense();
+    try { localStorage.setItem("bl_cart", JSON.stringify(cart)); } catch {}
+  }, [cart]);
+
+  // Load AdSense for Free plan — only if user accepted cookies
+  useEffect(() => {
+    if (!loaded || tenant.plan !== "free") return;
+    const consent = localStorage.getItem("bl_cookie_consent");
+    if (consent === "accepted") loadAdSense();
   }, [loaded, tenant?.plan]);
 
   // Navigate: keeps ?admin / ?superadmin in URL while on those pages,
@@ -119,7 +128,7 @@ function AppInner() {
     });
   }, []);
 
-  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const cartCount = useMemo(() => cart.reduce((s, i) => s + i.qty, 0), [cart]);
 
   const toggleFlag = (group, key) => {
     setConfig(prev => ({ ...prev, [group]: { ...prev[group], [key]: !prev[group][key] } }));
@@ -131,8 +140,30 @@ function AppInner() {
     if (section && config.sections[section] === false) { setPage("home"); window.scrollTo(0, 0); }
   }, [config, page]);
 
-  // Merge tenant config into ConfigContext
-  const mergedConfig = {
+  // Update document title + html lang on every page/lang change
+  useEffect(() => {
+    const names = {
+      home: lang === "fr" ? "Accueil" : "Home",
+      products: lang === "fr" ? "Nos Produits" : "Our Products",
+      story: lang === "fr" ? "Notre Histoire" : "Our Story",
+      contact: lang === "fr" ? "Contact" : "Contact",
+      checkout: lang === "fr" ? "Commander" : "Checkout",
+      privacy: lang === "fr" ? "Confidentialité" : "Privacy",
+      legal: lang === "fr" ? "Mentions légales" : "Legal",
+      admin: "Admin",
+      pricing: lang === "fr" ? "Tarifs" : "Pricing",
+      superadmin: "Super Admin",
+    };
+    const shopName = `${tenant?.shopName || "Barba"} ${tenant?.shopNameItalic || "Luxe"}`;
+    const pageName = names[page];
+    document.title = pageName && page !== "home"
+      ? `${pageName} — ${shopName}`
+      : `${shopName} by ISH — ${lang === "fr" ? "Huiles de barbe artisanales · Bruxelles" : "Artisan Beard Oils · Brussels"}`;
+    document.documentElement.lang = lang;
+  }, [page, lang, tenant?.shopName, tenant?.shopNameItalic]);
+
+  // Merge tenant config into ConfigContext — memoized to avoid rebuilding every render
+  const mergedConfig = useMemo(() => ({
     ...config,
     brand: {
       ...config.brand,
@@ -152,7 +183,7 @@ function AppInner() {
         { id: "express",  price: tenant.shipping?.express?.price  ?? 8.9,  label: tenant.shipping?.express?.label  || config.checkout.shippingOptions[1].label },
       ],
     },
-  };
+  }), [config, tenant]);
 
   if (!loaded) return (
     <div style={{ minHeight:"100vh", background:"var(--night)", display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -178,19 +209,19 @@ function AppInner() {
           <Nav page={page} setPage={setPage} lang={lang} setLang={setLang} cartCount={cartCount} setCartOpen={setCartOpen} />
         )}
         {mergedConfig.sections.cartDrawer && !noCartPages.includes(page) && (
-          <CartDrawer open={cartOpen} setOpen={setCartOpen} cart={cart} setCart={setCart} lang={lang} setPage={setPage} />
+          <CartDrawer open={cartOpen} setOpen={setCartOpen} cart={cart} setCart={setCart} lang={lang} setPage={navigate} />
         )}
-        {page === "home"     && <HomePage setPage={setPage} lang={lang} />}
-        {page === "products" && mergedConfig.sections.products && <ProductsPage lang={lang} addToCart={addToCart} />}
-        {page === "story"    && mergedConfig.sections.story    && <StoryPage lang={lang} setPage={setPage} />}
-        {page === "contact"  && mergedConfig.sections.contact  && <ContactPage lang={lang} setPage={setPage} />}
-        {page === "checkout" && mergedConfig.sections.checkout && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={setPage} />}
-        {page === "privacy"  && <PrivacyPage lang={lang} setPage={setPage} />}
-        {page === "legal"    && <LegalPage lang={lang} setPage={setPage} />}
+        {page === "home"     && <HomePage setPage={navigate} lang={lang} />}
+        {page === "products" && mergedConfig.sections.products && <ProductsPage lang={lang} addToCart={addToCart} setPage={navigate} />}
+        {page === "story"    && mergedConfig.sections.story    && <StoryPage lang={lang} setPage={navigate} />}
+        {page === "contact"  && mergedConfig.sections.contact  && <ContactPage lang={lang} setPage={navigate} />}
+        {page === "checkout" && mergedConfig.sections.checkout && <CheckoutPage lang={lang} cart={cart} setCart={setCart} setPage={navigate} />}
+        {page === "privacy"  && <PrivacyPage lang={lang} setPage={navigate} />}
+        {page === "legal"    && <LegalPage lang={lang} setPage={navigate} />}
         {page === "admin"      && <AdminPage setPage={navigate} />}
-        {page === "pricing"    && <PricingPage lang={lang} setPage={setPage} />}
+        {page === "pricing"    && <PricingPage lang={lang} setPage={navigate} />}
         {page === "superadmin" && <SuperAdminPage setPage={navigate} />}
-        {!noCookiePages.includes(page) && <CookieBanner lang={lang} setPage={setPage} />}
+        {!noCookiePages.includes(page) && <CookieBanner lang={lang} setPage={navigate} />}
         <DevPanel />
       </div>
     </ConfigContext.Provider>

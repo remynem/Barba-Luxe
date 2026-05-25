@@ -8,6 +8,35 @@ import {
   validateSession, saveTenantKV,
   getCredentials, saveCredentials, encrypt,
 } from "./_kv.js";
+import { createClient } from "@vercel/kv";
+
+// ── KV-based rate limiter (max attempts per IP per window) ────────────────────
+const RL_MAX     = 10;
+const RL_WINDOW  = 60 * 15; // 15 minutes
+
+function getIp(req) {
+  return (
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.headers["x-real-ip"] ||
+    req.socket?.remoteAddress ||
+    "unknown"
+  );
+}
+
+async function checkRateLimit(ip) {
+  const key = `rl:admin:${ip}`;
+  try {
+    const kv = createClient({
+      url:   process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_KV_URL,
+      token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
+    });
+    const count = await kv.incr(key);
+    if (count === 1) await kv.expire(key, RL_WINDOW);
+    return count <= RL_MAX;
+  } catch {
+    return true; // If KV unavailable, fail open (don't block legitimate users)
+  }
+}
 
 export default async function handler(req, res) {
   cors(res);
@@ -20,6 +49,22 @@ export default async function handler(req, res) {
   if (action === "login") {
     const { domain, password } = req.body;
     if (!domain || !password) return res.status(400).json({ error: "domain and password required" });
+
+    // Rate limit by IP — block brute-force attacks
+    const ip = getIp(req);
+    const allowed = await checkRateLimit(ip);
+    if (!allowed) {
+      return res.status(429).json({
+        error: `Trop de tentatives. Réessayez dans 15 minutes.`,
+        retryAfter: RL_WINDOW,
+      });
+    }
+
+    // Warn loudly if session secret is the default (misconfiguration)
+    if (!process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET === "changeme") {
+      console.error("[admin login] ⚠️ ADMIN_SESSION_SECRET is not set or is 'changeme' — sessions are insecure!");
+    }
+
     try {
       const tenant = await getTenant(domain);
       if (!tenant) return res.status(404).json({ error: "Tenant not found" });

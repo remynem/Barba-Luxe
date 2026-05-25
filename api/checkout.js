@@ -5,6 +5,7 @@
 import Stripe from "stripe";
 import { createMollieClient } from "@mollie/api-client";
 import { cors, getCredentials, decrypt } from "./_kv.js";
+import { randomInt } from "crypto";
 
 export default async function handler(req, res) {
   cors(res);
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
       }
       if (!mollieKey) return res.status(500).json({ error: "Mollie not configured" });
       const mollie = createMollieClient({ apiKey: mollieKey });
-      const orderNumber = orderData?.orderNumber || Math.floor(Math.random() * 90000 + 10000);
+      const orderNumber = orderData?.orderNumber || randomInt(10000, 99999);
       const protocol = req.headers["x-forwarded-proto"] || "https";
       const baseUrl  = req.headers.host ? `${protocol}://${req.headers.host}` : "http://localhost:3000";
       const payment  = await mollie.payments.create({

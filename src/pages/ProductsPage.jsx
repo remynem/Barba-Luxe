@@ -6,7 +6,7 @@ import { useReveal } from "../hooks/useReveal.js";
 import AdBanner from "../components/AdBanner.jsx";
 import Footer from "../components/Footer.jsx";
 
-export default function ProductsPage({ lang, addToCart }) {
+export default function ProductsPage({ lang, addToCart, setPage }) {
   const { config } = useConfig();
   const { tenant } = useTenant();
   const t = T[lang];
@@ -85,7 +85,7 @@ export default function ProductsPage({ lang, addToCart }) {
           );
         })}
       </div>
-      <Footer lang={lang} setPage={() => {}} />
+      <Footer lang={lang} setPage={setPage} />
     </div>
   );
 }

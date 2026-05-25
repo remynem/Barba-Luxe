@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
 import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 import { useReveal } from "../hooks/useReveal.js";
 import Footer from "../components/Footer.jsx";
 
 export default function ContactPage({ lang, setPage }) {
   const { config, prefillMessage, setPrefillMessage } = useConfig();
+  const { domain } = useTenant();
   const t = T[lang];
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
   useReveal();
+
+  // Reset success state when component mounts (e.g. navigating away and back)
+  useEffect(() => { setSent(false); }, []);
 
   useEffect(() => {
     if (prefillMessage) {
@@ -18,9 +25,28 @@ export default function ContactPage({ lang, setPage }) {
     }
   }, [prefillMessage]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSent(true);
+    setSending(true);
+    setSendError("");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, lang, domain: domain || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur inconnue");
+      setSent(true);
+    } catch (err) {
+      setSendError(
+        lang === "fr"
+          ? `Envoi échoué : ${err.message}. Réessayez ou contactez-nous par email.`
+          : `Send failed: ${err.message}. Please retry or email us directly.`
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -60,7 +86,14 @@ export default function ContactPage({ lang, setPage }) {
                 <label className="bl-form-label">{t.contact.message}</label>
                 <textarea className="bl-form-input bl-form-textarea" required value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} />
               </div>
-              <button type="submit" className="bl-form-submit">{t.contact.send}</button>
+              {sendError && (
+                <p style={{ fontSize: "13px", color: "#e57373", marginTop: "4px", lineHeight: 1.5 }}>
+                  ⚠ {sendError}
+                </p>
+              )}
+              <button type="submit" className="bl-form-submit" disabled={sending} style={{ opacity: sending ? 0.7 : 1 }}>
+                {sending ? (lang === "fr" ? "Envoi en cours…" : "Sending…") : t.contact.send}
+              </button>
             </form>
           )}
         </div>
