@@ -1,18 +1,26 @@
 import { useState } from "react";
 import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
+import { useTenant, localizeProducts } from "../contexts/TenantContext.jsx";
 import { useReveal } from "../hooks/useReveal.js";
+import AdBanner from "../components/AdBanner.jsx";
 import Footer from "../components/Footer.jsx";
 
 export default function ProductsPage({ lang, addToCart }) {
   const { config } = useConfig();
+  const { tenant } = useTenant();
   const t = T[lang];
   const [filterId, setFilterId] = useState("all");
   const [added, setAdded] = useState({});
   const [activeViews, setActiveViews] = useState({});
   useReveal();
 
-  const filtered = t.products.items.filter(p =>
+  // Use tenant products (with localization) or fallback to translation data
+  const allProducts = tenant?.products?.length
+    ? localizeProducts(tenant.products, lang)
+    : t.products.items;
+
+  const filtered = allProducts.filter(p =>
     filterId === "all" ? true : p.typeId === filterId
   );
 
@@ -36,6 +44,9 @@ export default function ProductsPage({ lang, addToCart }) {
           ))}
         </div>}
       </div>
+      {/* Ad banner — Free plan only, above product grid */}
+      <AdBanner slot="products-top" format="horizontal" className="bl-ad-products-top" />
+
       <div className="bl-products-grid">
         {filtered.map((item, i) => {
           const vi = activeViews[item.id] || 0;
@@ -44,7 +55,7 @@ export default function ProductsPage({ lang, addToCart }) {
               <div className="bl-product-img" style={{ position: "relative" }}>
                 <img src={item.views ? item.views[vi] : item.img} alt={item.name} style={{ transition: "opacity 0.35s ease" }} />
                 <div className="bl-product-badge">{item.type}</div>
-                {config.features.productViewToggle && item.views && (
+                {config.features.productViewToggle && item.views && item.views.length > 1 && (
                   <div style={{ position:"absolute", bottom:"10px", left:"50%", transform:"translateX(-50%)", display:"flex", gap:"6px", alignItems:"center" }}>
                     {item.views.map((_, idx) => (
                       <button key={idx} onClick={() => setView(item.id, idx)} style={{

@@ -16,8 +16,10 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
     : "";
 
   await resend.emails.send({
-    from: "Barba Luxe <commandes@barbaluxe.be>",
+    from: "Barba Luxe <commandes@ish-group.eu>",
     to: email,
+    reply_to: "remy@ish-group.eu",
+    bcc: process.env.STORE_EMAIL || "remy@ish-group.eu",
     subject: `Confirmation de commande #${orderNumber} — Barba Luxe`,
     html: `
 <!DOCTYPE html>
@@ -80,8 +82,72 @@ export async function sendOrderConfirmation({ email, name, items, subtotal, ship
         <!-- Footer -->
         <tr><td style="padding:24px 48px;text-align:center;border-top:1px solid rgba(201,169,110,0.1);">
           <p style="font-size:13px;color:rgba(247,242,235,0.4);margin:0 0 8px;">Des questions ? Contactez-nous</p>
-          <a href="mailto:contact@barbaluxe.be" style="color:#C9A96E;font-size:13px;">contact@barbaluxe.be</a>
+          <a href="mailto:remy@ish-group.eu" style="color:#C9A96E;font-size:13px;">remy@ish-group.eu</a>
           <p style="font-size:11px;color:rgba(247,242,235,0.25);margin:20px 0 0;">© 2025 Barba Luxe · Rue du Bailli 12, 1050 Bruxelles</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  });
+}
+
+// ── Welcome email (Pro activation) ───────────────────────────────────────────
+export async function sendWelcomeEmail({ email, shopName, tenantId }) {
+  await resend.emails.send({
+    from: "Barba Luxe Platform <commandes@ish-group.eu>",
+    to: email,
+    reply_to: "remy@ish-group.eu",
+    bcc: process.env.STORE_EMAIL || "remy@ish-group.eu",
+    subject: `🎉 Bienvenue sur le Plan Pro — ${shopName}`,
+    html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F7F2EB;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F2EB;padding:40px 0;">
+    <tr><td align="center">
+      <table width="580" cellpadding="0" cellspacing="0" style="background:#1C1209;border-radius:4px;overflow:hidden;max-width:580px;width:100%;">
+
+        <tr><td style="padding:40px 48px 32px;text-align:center;border-bottom:1px solid rgba(201,169,110,0.2);">
+          <div style="font-family:Georgia,serif;font-size:28px;color:#C9A96E;font-weight:500;letter-spacing:0.05em;">
+            Barba <em>Luxe</em>
+          </div>
+          <div style="font-size:10px;letter-spacing:0.2em;color:#8B7355;text-transform:uppercase;margin-top:4px;">Platform</div>
+        </td></tr>
+
+        <tr><td style="padding:40px 48px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px;">⭐</div>
+          <h1 style="font-family:Georgia,serif;font-size:26px;color:#E8D5B0;margin:0 0 16px;">Plan Pro activé !</h1>
+          <p style="color:rgba(247,242,235,0.7);font-size:15px;line-height:1.7;margin:0 0 32px;">
+            Bienvenue, <strong style="color:#C9A96E;">${shopName}</strong> !<br>
+            Votre boutique est maintenant sur le Plan Pro. Vous bénéficiez de :
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="text-align:left;margin-bottom:32px;">
+            ${[
+              ["✓ Produits illimités", "Plus aucune limite sur votre catalogue"],
+              ["✓ Sans publicités", "Vos clients profitent d'une expérience épurée"],
+              ["✓ Thèmes premium", "Tous les thèmes débloqués"],
+              ["✓ Support prioritaire", "Nous répondons sous 4h ouvrées"],
+            ].map(([title, desc]) => `
+            <tr>
+              <td style="padding:10px 0;border-bottom:1px solid rgba(201,169,110,0.1);">
+                <span style="color:#C9A96E;font-weight:500;">${title}</span>
+                <span style="color:rgba(247,242,235,0.5);font-size:13px;"> — ${desc}</span>
+              </td>
+            </tr>`).join("")}
+          </table>
+          <p style="font-size:13px;color:rgba(247,242,235,0.45);margin:0;">
+            Identifiant boutique : <code style="background:rgba(255,255,255,0.07);padding:2px 6px;border-radius:3px;">${tenantId}</code>
+          </p>
+        </td></tr>
+
+        <tr><td style="padding:24px 48px;text-align:center;border-top:1px solid rgba(201,169,110,0.1);">
+          <p style="font-size:13px;color:rgba(247,242,235,0.4);margin:0 0 8px;">Des questions ?</p>
+          <a href="mailto:remy@ish-group.eu" style="color:#C9A96E;font-size:13px;">remy@ish-group.eu</a>
+          <p style="font-size:11px;color:rgba(247,242,235,0.25);margin:20px 0 0;">© 2025 Barba Luxe Platform</p>
         </td></tr>
 
       </table>

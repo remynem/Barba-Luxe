@@ -6,13 +6,13 @@ import { useConfig } from "../data/config.js";
 import { validateShipping } from "../utils/validators.js";
 
 // ─── Sidebar récapitulatif ────────────────────────────────────────────────────
-function Sidebar({ cart, shipping, t }) {
+function Sidebar({ cart, shipping, t, lang }) {
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const shippingCost = shipping === "express" ? 8.9 : 0;
   const total = subtotal + shippingCost;
   return (
     <div className="bl-checkout-sidebar">
-      <h4>{t.nav?.home ? (t.lang === "FR" ? "Votre commande" : "Your order") : "Votre commande"}</h4>
+      <h4>{lang === "fr" ? "Votre commande" : "Your order"}</h4>
       {cart.map(item => (
         <div className="bl-sidebar-item" key={item.id}>
           <img src={item.img} alt={item.name} />
@@ -306,7 +306,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                 </>
               )}
             </div>
-            <Sidebar cart={cart} shipping={shipping} t={t} />
+            <Sidebar cart={cart} shipping={shipping} t={t} lang={lang} />
           </div>
         )}
 
@@ -389,7 +389,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                 }}>{t.checkout.continuePayment} →</button>
               </div>
             </div>
-            <Sidebar cart={cart} shipping={shipping} t={t} />
+            <Sidebar cart={cart} shipping={shipping} t={t} lang={lang} />
           </div>
         )}
 
@@ -473,7 +473,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                 <button className="bl-btn-back" onClick={() => setStep(1)}>{t.checkout.backShipping}</button>
               </div>
             </div>
-            <Sidebar cart={cart} shipping={shipping} t={t} />
+            <Sidebar cart={cart} shipping={shipping} t={t} lang={lang} />
           </div>
         )}
 

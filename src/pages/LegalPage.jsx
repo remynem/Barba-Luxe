@@ -11,7 +11,7 @@ const content = {
       sections: [
         {
           h: "Éditeur du site",
-          p: "Barba Luxe by ISH\nRue du Bailli 12, 1050 Bruxelles, Belgique\nE-mail : contact@barbaluxe.be\nTél. : +32 2 000 00 00\nNuméro d'entreprise (BCE) : BE 0000.000.000",
+          p: "Barba Luxe by ISH\nRue du Bailli 12, 1050 Bruxelles, Belgique\nE-mail : remy@ish-group.eu\nTél. : +32 2 000 00 00\nNuméro d'entreprise (BCE) : BE 0000.000.000",
         },
         {
           h: "Hébergement",
@@ -32,7 +32,7 @@ const content = {
       sections: [
         {
           h: "1. Identification du vendeur",
-          p: "Barba Luxe by ISH, Rue du Bailli 12, 1050 Bruxelles, Belgique — contact@barbaluxe.be. Numéro BCE : BE 0000.000.000.",
+          p: "Barba Luxe by ISH, Rue du Bailli 12, 1050 Bruxelles, Belgique — remy@ish-group.eu. Numéro BCE : BE 0000.000.000.",
         },
         {
           h: "2. Produits et prix",
@@ -73,7 +73,7 @@ const content = {
       sections: [
         {
           h: "Publisher",
-          p: "Barba Luxe by ISH\n12 Rue du Bailli, 1050 Brussels, Belgium\nEmail: contact@barbaluxe.be\nPhone: +32 2 000 00 00\nEnterprise number (CBE): BE 0000.000.000",
+          p: "Barba Luxe by ISH\n12 Rue du Bailli, 1050 Brussels, Belgium\nEmail: remy@ish-group.eu\nPhone: +32 2 000 00 00\nEnterprise number (CBE): BE 0000.000.000",
         },
         {
           h: "Hosting",
@@ -94,7 +94,7 @@ const content = {
       sections: [
         {
           h: "1. Seller",
-          p: "Barba Luxe by ISH, 12 Rue du Bailli, 1050 Brussels, Belgium — contact@barbaluxe.be. CBE number: BE 0000.000.000.",
+          p: "Barba Luxe by ISH, 12 Rue du Bailli, 1050 Brussels, Belgium — remy@ish-group.eu. CBE number: BE 0000.000.000.",
         },
         {
           h: "2. Products and Prices",

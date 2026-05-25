@@ -1,26 +1,26 @@
-# Barba Luxe by ISH 🧔
+# Barba Luxe — SaaS E-commerce Template 🧔
 
-Template e-commerce premium pour marque de cosmétique masculine. Pensé pour être adapté rapidement à n'importe quel produit — il suffit d'éditer un seul bloc de config.
+Template e-commerce **multi-tenant** pour boutiques artisanales. Chaque boutique obtient son propre sous-domaine et peut tout personnaliser via un **panel admin no-code** intégré.
 
 ---
 
 ## Ce que ça fait
 
-* 4 pages : Accueil, Produits, Notre Histoire, Contact
-* Panier coulissant avec gestion des quantités
-* Checkout en 3 étapes (panier → livraison → paiement) avec validation des formulaires
-* Paiement réel via **Stripe** — Bancontact (prioritaire Belgique) + Carte bancaire
-* Bilingue FR / EN avec switch dynamique
-* Images produits générées en SVG inline — aucune dépendance externe
-* Carousel par produit (vue studio + vue lifestyle)
-* Animations au scroll, menu mobile, footer complet
-* Panneau de config ⚙ pour tester les options en live
+* **Boutique complète** : Accueil, Produits, Histoire, Contact, Checkout
+* **Paiements réels** : Stripe (carte, Apple Pay, Google Pay) + Mollie (Bancontact, Belfius, KBC)
+* **Emails transactionnels** : Confirmation de commande + bienvenue Pro via Resend
+* **Bilingue** FR / EN avec switch dynamique
+* **Panel admin intégré** : personnalisation no-code sans toucher au code
+* **Multi-tenant** : chaque boutique a sa propre config isolée par sous-domaine
+* **Freemium** : plan Gratuit (avec pub) vs Pro 29€/mois (sans pub, produits illimités)
+* **PWA** : installable sur mobile, mode hors-ligne
+* **RGPD** : Cookie consent, Politique de confidentialité, CGV, Mentions légales
 
 ---
 
 ## Démarrage
 
-```
+```bash
 npm install
 npm run dev       # → http://localhost:5173
 npm run build     # build production
@@ -29,144 +29,100 @@ npm run preview   # prévisualiser le build
 
 ---
 
-## Tout se passe dans `src/App.jsx` → bloc `CONFIG`
+## Panel Admin
 
-### 🏷️ Marque
+Accessible via :
+1. **URL** : `votresite.com?admin` ou `votresite.com#admin`
+2. **Footer** : cliquez sur le petit ⚙ discret en bas de page
 
-```
-CONFIG.brand = {
-  name: "Barba Luxe",
-  subBrand: "by ISH",
-  tagline: { fr: "...", en: "..." },
-  address: { fr: "...", en: "..." },
-  email: "contact@barbaluxe.be",
-}
-```
+**Mot de passe par défaut** : `admin`
 
-### 👁️ Sections — activer / désactiver
+> ⚠️ Changez le mot de passe dès la première connexion via le panel → Sécurité
 
-```
-CONFIG.sections = {
-  home: true,
-  products: true,
-  story: true,
-  contact: true,
-  checkout: true,
-  cartDrawer: true,
-  reassuranceBanner: true,   // bande livraison/naturel/retours
-  previewCards: true,        // 4 blocs de redirection sur le home
-  productFilters: true,      // filtres par type sur la grille
-  productCarousel: true,     // switcher de vues par produit
-  storyTimeline: true,       // section valeurs sur la page histoire
-  contactMap: true,
-  socialLinks: true,
-}
-```
+### Ce que l'owner peut personnaliser
 
-> Si `checkout: false` et `contact: true`, le panier affiche un bloc
-> "Nous contacter" qui pré-remplit automatiquement le formulaire
-> avec le contenu du panier.
+| Section | Champs |
+|---------|--------|
+| 🏪 Identité | Nom boutique, logo, tagline (FR/EN), textes hero |
+| 🎨 Thème | 3 couleurs (accent, fond, clair) + 6 palettes prédéfinies |
+| 📦 Produits | CRUD complet — nom, prix, description, images (FR/EN) |
+| 📬 Contact | Email, téléphone, adresse (FR/EN) |
+| 🚚 Livraison | Seuil gratuit, tarifs standard et express |
+| 🔒 Sécurité | Changement du mot de passe admin |
+| ⭐ Abonnement | Plan gratuit vs Pro + lien upgrade Stripe |
 
-### 🛒 Checkout
+---
 
-```
-CONFIG.checkout = {
-  freeShippingThreshold: 45,  // livraison gratuite dès X €
-  shippingOptions: [...],     // transporteurs et tarifs
-  paymentMethods: {
-    card: true,
-    applePay: true,
-    googlePay: true,
-    paypal: true,
-  },
-}
-```
+## Plans & Freemium
 
-### ⚙️ Features
+| Fonctionnalité | Gratuit | Pro (29€/mois) |
+|----------------|---------|----------------|
+| Boutique complète | ✓ | ✓ |
+| Produits | 10 max | Illimités |
+| Panel admin | ✓ | ✓ |
+| Paiements Stripe & Mollie | ✓ | ✓ |
+| Emails de confirmation | ✓ | ✓ |
+| Bilingue FR / EN | ✓ | ✓ |
+| Thèmes & couleurs | ✓ | ✓ |
+| Publicités Google AdSense | Affichées | Supprimées |
+| Analytics avancés | — | ✓ (bientôt) |
+| Support prioritaire | — | 4h |
+
+### Flux d'upgrade
 
 ```
-CONFIG.features = {
-  langSwitch: true,        // bouton FR/EN dans la nav
-  devPanel: true,          // panneau de config flottant ← mettre false en prod
-  scrollReveal: true,      // animations au scroll
-  cartBadge: true,         // compteur sur le bouton panier
-  productViewToggle: true, // carousel Studio / Lifestyle par produit
-}
-```
-
-### 💳 Stripe
-
-```
-CONFIG.stripePublishableKey = "pk_test_xxxx"  // clé publique Stripe
+Boutique (plan gratuit)
+  → clic "Passer en Pro" (PricingPage ou AdminPage)
+  → POST /api/create-subscription → Stripe Checkout Session
+  → Stripe redirect → checkout.stripe.com
+  → Paiement réussi → retour sur ?pro_session=sess_xxx
+  → App.jsx vérifie via POST /api/verify-subscription
+  → saveTenant({ plan: "pro" }) en localStorage
+  → Email de bienvenue Pro envoyé via Resend
 ```
 
 ---
 
-## Paiement Stripe
+## Variables d'environnement
 
-Le paiement est géré par [Stripe](https://stripe.com) via une Vercel Serverless Function.
+```env
+# Stripe
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_SUBSCRIPTION_WEBHOOK_SECRET=whsec_...   # optionnel (séparé)
+STRIPE_PRO_PRICE_ID=price_...                  # si non fourni, créé auto en dev
 
-### Variables d'environnement requises
+# Mollie (Bancontact, Belfius, KBC)
+MOLLIE_API_KEY=live_...
 
-| Variable | Où | Description |
-|---|---|---|
-| `STRIPE_SECRET_KEY` | Vercel (serveur uniquement) | Clé secrète Stripe |
-| `STRIPE_WEBHOOK_SECRET` | Vercel (serveur uniquement) | Secret webhook Stripe |
-| `CONFIG.stripePublishableKey` | `src/App.jsx` | Clé publique (non secrète) |
+# Resend (emails transactionnels)
+RESEND_API_KEY=re_...
+STORE_EMAIL=remy@ish-group.eu
 
-### Méthodes de paiement actives
-
-* **Bancontact** — prioritaire pour les clients belges
-* **Carte bancaire** — Visa, Mastercard, American Express
-
----
-
-## 🧪 Données de test Stripe
-
-> Ces données fonctionnent uniquement en mode test (`pk_test_`).
-> Aucun vrai paiement n'est effectué.
-
-### Carte bancaire — Succès
-
-| Champ | Valeur |
-|---|---|
-| Numéro | `4242 4242 4242 4242` |
-| Date d'expiration | `12/29` |
-| CVC | `123` |
-| Pays | `Belgique` (ou n'importe quel pays) |
-
-### Carte bancaire — Refusée
-
-| Numéro | Raison de l'échec |
-|---|---|
-| `4000 0000 0000 0002` | Carte refusée |
-| `4000 0000 0000 9995` | Fonds insuffisants |
-| `4000 0000 0000 0069` | Carte expirée |
-
-### Bancontact — Test
-
-Sélectionne l'onglet **Bancontact** dans le formulaire de paiement.
-Stripe redirige vers une page de test → clique **Autoriser** → retour automatique sur la page de succès.
-
-### 3D Secure — Test
-
-| Numéro | Comportement |
-|---|---|
-| `4000 0025 0000 3155` | Demande authentification 3DS |
-| `4000 0027 6000 3184` | 3DS requis, authentification échoue |
-
-> Toutes les données de test officielles : [stripe.com/docs/testing](https://stripe.com/docs/testing)
+# Google AdSense (plan gratuit uniquement)
+VITE_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxx       # laisser vide pour désactiver les pubs
+```
 
 ---
 
-## Déploiement sur Vercel
+## Architecture multi-tenant
 
-1. Push le repo sur GitHub
-2. [vercel.com](https://vercel.com) → New Project → importer le repo
-3. Settings → Environment Variables → ajouter `STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET`
-4. Deploy — URL live en ~60 secondes, HTTPS inclus
+```
+Un seul déploiement Vercel
+         ↓
+Sous-domaines wildcard : shop.barbaluxe.app
+         ↓
+TenantContext détecte le sous-domaine
+         ↓
+Config chargée depuis localStorage (par domaine)
+         ↓
+Admin panel → sauvegarde en localStorage
+         ↓
+Plan Pro activé → Stripe Checkout → localStorage mis à jour
+```
 
-> Penser à mettre `devPanel: false` et utiliser les clés `pk_live_` / `sk_live_` en production.
+Chaque sous-domaine a son propre `localStorage` → configs complètement isolées.
 
 ---
 
@@ -175,21 +131,76 @@ Stripe redirige vers une page de test → clique **Autoriser** → retour automa
 ```
 barba-luxe/
 ├── src/
-│   └── App.jsx          ← tout le frontend (~1800 lignes)
+│   ├── App.jsx                     ← Orchestrateur principal + Pro activation
+│   ├── contexts/
+│   │   └── TenantContext.jsx       ← Multi-tenant : config, admin, plan, produits
+│   ├── pages/
+│   │   ├── HomePage.jsx            ← Textes hero dynamiques + AdBanner
+│   │   ├── ProductsPage.jsx        ← Produits tenant + AdBanner
+│   │   ├── AdminPage.jsx           ← Panel admin no-code (7 onglets)
+│   │   ├── PricingPage.jsx         ← Page publique Free vs Pro
+│   │   ├── CheckoutPage.jsx
+│   │   ├── StoryPage.jsx
+│   │   ├── ContactPage.jsx
+│   │   ├── PrivacyPage.jsx
+│   │   └── LegalPage.jsx
+│   ├── components/
+│   │   ├── Nav.jsx                 ← Logo dynamique (tenant)
+│   │   ├── Footer.jsx              ← Lien admin discret + infos tenant
+│   │   ├── AdBanner.jsx            ← Pub Google AdSense (plan gratuit)
+│   │   ├── CartDrawer.jsx
+│   │   └── CookieBanner.jsx
+│   ├── data/
+│   │   ├── config.js               ← CONFIG global (features, sections)
+│   │   ├── translations.js         ← Textes FR/EN
+│   │   └── images.js               ← SVG inline produits
+│   └── styles/global.css           ← Tous les styles (admin, pricing, ads…)
 ├── api/
-│   ├── create-payment-intent.js   ← serverless function Stripe
-│   └── webhook.js                 ← webhooks Stripe
+│   ├── create-payment-intent.js    ← Stripe paiement one-time
+│   ├── create-subscription.js      ← Stripe abonnement Pro 29€/mois
+│   ├── verify-subscription.js      ← Vérifie session Stripe post-paiement
+│   ├── subscription-webhook.js     ← Webhooks Stripe (activation, résiliation)
+│   ├── mollie-payment.js           ← Mollie Bancontact/Belfius/KBC
+│   ├── mollie-webhook.js
+│   └── _email.js                   ← Emails Resend (commande + bienvenue Pro)
 ├── public/
-├── vercel.json
+│   └── manifest.json               ← PWA
+├── capacitor.config.ts             ← Config app native
+├── .env.example
 └── package.json
 ```
 
 ---
 
-## Référence
+## Données de test Stripe
 
-Le fichier `MASTER_PROMPT.md` documente l'architecture complète, les choix techniques, les bugs connus et leur fix — utile pour régénérer ou adapter l'app depuis zéro avec un LLM.
+| Carte | Numéro |
+|-------|--------|
+| Succès | `4242 4242 4242 4242` |
+| Refusée | `4000 0000 0000 0002` |
+| 3DS | `4000 0025 0000 3155` |
+
+Date : `12/29` · CVC : `123`
+
+Pour tester l'upgrade Pro : utiliser `4242 4242 4242 4242` sur la page Pricing → le plan sera activé en localStorage après retour Stripe.
 
 ---
 
-**Stack** — React 18 · Vite 5 · Stripe · Vercel Serverless · CSS pur · SVG inline
+## Déploiement Vercel
+
+1. Push sur GitHub
+2. vercel.com → New Project → importer le repo
+3. Settings → Environment Variables → ajouter toutes les clés ci-dessus
+4. Deploy — URL live en ~60 secondes
+
+Pour les sous-domaines : ajouter un wildcard `*.votredomaine.com` dans les settings Vercel.
+
+### Webhooks Stripe à configurer
+
+| Endpoint | Événements |
+|----------|-----------|
+| `https://votre-site.com/api/subscription-webhook` | `checkout.session.completed`, `customer.subscription.deleted`, `invoice.payment_failed` |
+
+---
+
+**Stack** — React 18 · Vite 5 · Stripe Billing · Mollie · Resend · Google AdSense · Capacitor · Vercel · CSS pur · PWA

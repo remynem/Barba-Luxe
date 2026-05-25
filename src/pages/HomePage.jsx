@@ -1,13 +1,23 @@
 import { IMGS } from "../data/images.js";
 import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
+import { useTenant } from "../contexts/TenantContext.jsx";
 import { useReveal } from "../hooks/useReveal.js";
+import AdBanner from "../components/AdBanner.jsx";
 import Footer from "../components/Footer.jsx";
 
 export default function HomePage({ setPage, lang }) {
   const { config } = useConfig();
+  const { tenant } = useTenant();
   const t = T[lang];
   useReveal();
+
+  // Tenant overrides for hero text
+  const heroTagline = tenant?.tagline?.[lang]      || t.hero.tagline;
+  const heroTitle1  = tenant?.hero?.title1?.[lang] || t.hero.title1;
+  const heroTitle2  = tenant?.hero?.title2?.[lang] || t.hero.title2;
+  const heroTitle3  = tenant?.hero?.title3?.[lang] || t.hero.title3;
+  const heroCta     = tenant?.hero?.cta?.[lang]    || t.hero.cta;
 
   return (
     <div>
@@ -16,14 +26,14 @@ export default function HomePage({ setPage, lang }) {
         <div className="bl-hero-bg" style={{backgroundImage: `url(${IMGS.hero})`, backgroundSize:"cover", backgroundPosition:"center"}} />
         <div className="bl-hero-overlay" />
         <div className="bl-hero-content">
-          <p className="bl-hero-tagline">{t.hero.tagline}</p>
+          <p className="bl-hero-tagline">{heroTagline}</p>
           <h1 className="bl-hero-title">
-            <span className="l1">{t.hero.title1}</span>
-            <span className="l2">{t.hero.title2}</span>
-            <span className="l3">{t.hero.title3}</span>
+            <span className="l1">{heroTitle1}</span>
+            <span className="l2">{heroTitle2}</span>
+            <span className="l3">{heroTitle3}</span>
           </h1>
           <span className="bl-hero-cta" onClick={() => { setPage("products"); window.scrollTo(0,0); }} style={{ cursor: "pointer" }}>
-            {t.hero.cta} →
+            {heroCta} →
           </span>
         </div>
         <div className="bl-hero-scroll">{t.hero.scroll}</div>
@@ -66,6 +76,9 @@ export default function HomePage({ setPage, lang }) {
           ))}
         </div>
       </div>}
+
+      {/* Ad banner — Free plan only, between reassurance and footer */}
+      <AdBanner slot="home-mid" format="horizontal" className="bl-ad-home-mid" />
 
       <Footer lang={lang} setPage={setPage} />
     </div>

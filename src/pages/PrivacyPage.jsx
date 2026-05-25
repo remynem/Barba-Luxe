@@ -8,7 +8,7 @@ const content = {
     sections: [
       {
         h: "1. Responsable du traitement",
-        p: "Barba Luxe by ISH, Rue du Bailli 12, 1050 Bruxelles, Belgique — contact@barbaluxe.be. Nous sommes responsables du traitement de vos données personnelles collectées via ce site et cette application.",
+        p: "Barba Luxe by ISH, Rue du Bailli 12, 1050 Bruxelles, Belgique — remy@ish-group.eu. Nous sommes responsables du traitement de vos données personnelles collectées via ce site et cette application.",
       },
       {
         h: "2. Données collectées",
@@ -28,7 +28,7 @@ const content = {
       },
       {
         h: "6. Vos droits",
-        p: "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation, de portabilité et d'opposition. Pour exercer ces droits, contactez-nous à contact@barbaluxe.be. Vous pouvez également introduire une réclamation auprès de l'Autorité de protection des données belge (APD) : www.autoriteprotectiondonnees.be.",
+        p: "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation, de portabilité et d'opposition. Pour exercer ces droits, contactez-nous à remy@ish-group.eu. Vous pouvez également introduire une réclamation auprès de l'Autorité de protection des données belge (APD) : www.autoriteprotectiondonnees.be.",
       },
       {
         h: "7. Cookies",
@@ -46,7 +46,7 @@ const content = {
     sections: [
       {
         h: "1. Data Controller",
-        p: "Barba Luxe by ISH, 12 Rue du Bailli, 1050 Brussels, Belgium — contact@barbaluxe.be. We are responsible for processing your personal data collected through this website and application.",
+        p: "Barba Luxe by ISH, 12 Rue du Bailli, 1050 Brussels, Belgium — remy@ish-group.eu. We are responsible for processing your personal data collected through this website and application.",
       },
       {
         h: "2. Data Collected",
@@ -66,7 +66,7 @@ const content = {
       },
       {
         h: "6. Your Rights",
-        p: "Under GDPR you have the right to access, rectify, erase, restrict, port, and object to processing. Contact us at contact@barbaluxe.be. You may also lodge a complaint with the Belgian Data Protection Authority (APD): www.dataprotectionauthority.be.",
+        p: "Under GDPR you have the right to access, rectify, erase, restrict, port, and object to processing. Contact us at remy@ish-group.eu. You may also lodge a complaint with the Belgian Data Protection Authority (APD): www.dataprotectionauthority.be.",
       },
       {
         h: "7. Cookies",
