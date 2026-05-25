@@ -19,6 +19,7 @@ function AdminLogin({ onLogin, onBack }) {
   const [pwd, setPwd] = useState("");
   const [err, setErr] = useState(false);
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,7 +27,12 @@ function AdminLogin({ onLogin, onBack }) {
     setErr(false);
     const ok = await onLogin(pwd);
     setLoading(false);
-    if (!ok) { setErr(true); setPwd(""); }
+    if (!ok) {
+      setErr(true);
+      setPwd("");
+      // Re-focus the input so user can immediately retype
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
   };
 
   return (
@@ -37,6 +43,7 @@ function AdminLogin({ onLogin, onBack }) {
         <p className="bl-admin-login-sub">Accès réservé au propriétaire de la boutique</p>
         <form onSubmit={handleSubmit} className="bl-admin-login-form">
           <input
+            ref={inputRef}
             type="password"
             placeholder="Mot de passe admin"
             value={pwd}
