@@ -109,10 +109,10 @@ function MollieSection({ lang, total, orderData, domain, onError }) {
   const handleMollie = async (method) => {
     setLoading(method);
     try {
-      const res = await fetch("/api/create-mollie-payment", {
+      const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total, method, orderData, domain }),
+        body: JSON.stringify({ type: "mollie", amount: total, method, orderData, domain }),
       });
       const data = await res.json();
       if (data.checkoutUrl) {
@@ -217,10 +217,10 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
       shippingAddress: JSON.stringify(shipFields),
     };
 
-    fetch("/api/create-payment-intent", {
+    fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: Math.round(total * 100), metadata, domain }),
+      body: JSON.stringify({ type: "stripe", amount: Math.round(total * 100), metadata, domain }),
     })
       .then(r => r.json())
       .then(data => {

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Barba Luxe — Architecture</title>
+<style>
+  body { margin: 0; background: #0f0a06; font-family: 'Georgia', serif; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<svg width="1100" height="820" viewBox="0 0 1100 820" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="gBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a0f05"/>
+      <stop offset="100%" stop-color="#0f0a06"/>
+    </linearGradient>
+    <linearGradient id="gGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d4b483"/>
+      <stop offset="100%" stop-color="#c9a96e"/>
+    </linearGradient>
+    <linearGradient id="gBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2d4a7a"/>
+      <stop offset="100%" stop-color="#1e3355"/>
+    </linearGradient>
+    <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a4a2e"/>
+      <stop offset="100%" stop-color="#0f2e1c"/>
+    </linearGradient>
+    <linearGradient id="gPurple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3a1f5a"/>
+      <stop offset="100%" stop-color="#251340"/>
+    </linearGradient>
+    <linearGradient id="gDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a1a0a"/>
+      <stop offset="100%" stop-color="#1c1209"/>
+    </linearGradient>
+
+    <!-- Arrow marker -->
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#c9a96e" opacity="0.7"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#5b8dd9" opacity="0.8"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#2ecc71" opacity="0.8"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#e74c3c" opacity="0.8"/>
+    </marker>
+
+    <!-- Drop shadow -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="820" fill="url(#gBg)"/>
+
+  <!-- Title -->
+  <text x="550" y="38" text-anchor="middle" font-size="22" font-family="Georgia,serif" fill="#c9a96e" letter-spacing="2">BARBA LUXE — Architecture Plateforme</text>
+  <text x="550" y="58" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(247,242,235,0.3)" letter-spacing="3">MULTI-TENANT SAAS</text>
+  <line x1="200" y1="66" x2="900" y2="66" stroke="rgba(201,169,110,0.2)" stroke-width="1"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ROW 1 : ACTORS -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <!-- Actor: Client Final -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="82" width="180" height="88" rx="10" fill="url(#gDark)" stroke="rgba(201,169,110,0.35)" stroke-width="1.5"/>
+    <text x="130" y="108" text-anchor="middle" font-size="26">🛍️</text>
+    <text x="130" y="130" text-anchor="middle" font-size="13" font-family="Georgia,serif" fill="#f7f2eb">Client Final</text>
+    <text x="130" y="148" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.4)">achète des produits</text>
+    <text x="130" y="162" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.4)">via la boutique</text>
+  </g>
+
+  <!-- Actor: Propriétaire boutique -->
+  <g filter="url(#shadow)">
+    <rect x="460" y="82" width="180" height="88" rx="10" fill="url(#gDark)" stroke="rgba(201,169,110,0.35)" stroke-width="1.5"/>
+    <text x="550" y="108" text-anchor="middle" font-size="26">👨‍💼</text>
+    <text x="550" y="130" text-anchor="middle" font-size="13" font-family="Georgia,serif" fill="#f7f2eb">Propriétaire Boutique</text>
+    <text x="550" y="148" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.4)">configure sa boutique</text>
+    <text x="550" y="162" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.4)">via le panel admin</text>
+  </g>
+
+  <!-- Actor: Platform Owner -->
+  <g filter="url(#shadow)">
+    <rect x="880" y="82" width="180" height="88" rx="10" fill="url(#gDark)" stroke="#c9a96e" stroke-width="1.5"/>
+    <text x="970" y="108" text-anchor="middle" font-size="26">🏗️</text>
+    <text x="970" y="130" text-anchor="middle" font-size="13" font-family="Georgia,serif" fill="#c9a96e">Platform Owner</text>
+    <text x="970" y="148" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.6)">gère les 100 clients</text>
+    <text x="970" y="162" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.6)">via ?superadmin</text>
+  </g>
+
+  <!-- Arrows actors → SPA -->
+  <line x1="130" y1="170" x2="130" y2="218" stroke="#c9a96e" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5" marker-end="url(#arrow)"/>
+  <line x1="550" y1="170" x2="550" y2="218" stroke="#c9a96e" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5" marker-end="url(#arrow)"/>
+  <line x1="970" y1="170" x2="970" y2="218" stroke="#c9a96e" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5" marker-end="url(#arrow)"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ROW 2 : REACT SPA -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <g filter="url(#shadow)">
+    <rect x="40" y="222" width="1020" height="118" rx="12" fill="url(#gBlue)" stroke="#5b8dd9" stroke-width="1.5"/>
+    <text x="60" y="248" font-size="11" font-family="sans-serif" fill="#5b8dd9" letter-spacing="2" opacity="0.8">REACT SPA — Vercel CDN (servi depuis le domaine du tenant)</text>
+
+    <!-- Modules -->
+    <!-- Boutique -->
+    <rect x="58" y="258" width="270" height="64" rx="7" fill="rgba(91,141,217,0.12)" stroke="rgba(91,141,217,0.3)" stroke-width="1"/>
+    <text x="193" y="278" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(247,242,235,0.5)" letter-spacing="1">BOUTIQUE</text>
+    <text x="193" y="296" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.7)">HomePage · ProductsPage · StoryPage</text>
+    <text x="193" y="312" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.7)">ContactPage · CheckoutPage</text>
+
+    <!-- TenantContext -->
+    <rect x="348" y="258" width="200" height="64" rx="7" fill="rgba(201,169,110,0.1)" stroke="rgba(201,169,110,0.35)" stroke-width="1"/>
+    <text x="448" y="278" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#c9a96e" letter-spacing="1">TENANT CONTEXT</text>
+    <text x="448" y="296" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.6)">Détecte le domaine</text>
+    <text x="448" y="312" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.6)">KV mode / localStorage mode</text>
+
+    <!-- Admin Panel -->
+    <rect x="568" y="258" width="220" height="64" rx="7" fill="rgba(91,141,217,0.12)" stroke="rgba(91,141,217,0.3)" stroke-width="1"/>
+    <text x="678" y="278" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(247,242,235,0.5)" letter-spacing="1">ADMIN PANEL</text>
+    <text x="678" y="296" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.7)">Identité · Thème · Produits · Contact</text>
+    <text x="678" y="312" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.7)">💳 Paiements · 📋 Commandes · ⚖️ Légal</text>
+
+    <!-- Super Admin -->
+    <rect x="808" y="258" width="235" height="64" rx="7" fill="rgba(201,169,110,0.08)" stroke="rgba(201,169,110,0.4)" stroke-width="1"/>
+    <text x="925" y="278" text-anchor="middle" font-size="11" font-family="sans-serif" fill="#c9a96e" letter-spacing="1">SUPER ADMIN</text>
+    <text x="925" y="296" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.7)">Créer · Lister · Plan free↔pro</text>
+    <text x="925" y="312" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.7)">Réinitialiser MDP · Supprimer</text>
+  </g>
+
+  <!-- Arrow SPA → API -->
+  <line x1="550" y1="340" x2="550" y2="378" stroke="#5b8dd9" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6" marker-end="url(#arrowBlue)"/>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ROW 3 : API LAYER -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <g filter="url(#shadow)">
+    <rect x="40" y="382" width="1020" height="130" rx="12" fill="url(#gDark)" stroke="rgba(201,169,110,0.4)" stroke-width="1.5"/>
+    <text x="60" y="406" font-size="11" font-family="sans-serif" fill="rgba(201,169,110,0.7)" letter-spacing="2">VERCEL SERVERLESS FUNCTIONS — /api/*</text>
+
+    <!-- Auth -->
+    <rect x="58" y="414" width="190" height="80" rx="7" fill="rgba(201,169,110,0.07)" stroke="rgba(201,169,110,0.25)" stroke-width="1"/>
+    <text x="153" y="433" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.6)" letter-spacing="1">AUTH &amp; TENANTS</text>
+    <text x="153" y="451" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/tenant  GET</text>
+    <text x="153" y="466" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/admin-login  POST</text>
+    <text x="153" y="481" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/save-tenant  POST</text>
+    <text x="153" y="496" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/super-admin  GET/POST</text>
+
+    <!-- Credentials -->
+    <rect x="264" y="414" width="190" height="80" rx="7" fill="rgba(201,169,110,0.07)" stroke="rgba(201,169,110,0.25)" stroke-width="1"/>
+    <text x="359" y="433" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.6)" letter-spacing="1">CREDENTIALS</text>
+    <text x="359" y="451" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/save-credentials  POST</text>
+    <text x="359" y="466" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.45)">⟶ chiffrement AES-256-GCM</text>
+    <text x="359" y="481" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.45)">⟶ clé Stripe/Mollie par tenant</text>
+
+    <!-- Payments -->
+    <rect x="470" y="414" width="190" height="80" rx="7" fill="rgba(201,169,110,0.07)" stroke="rgba(201,169,110,0.25)" stroke-width="1"/>
+    <text x="565" y="433" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.6)" letter-spacing="1">PAIEMENTS</text>
+    <text x="565" y="451" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/create-payment-intent</text>
+    <text x="565" y="466" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/create-mollie-payment</text>
+    <text x="565" y="481" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/create-subscription</text>
+    <text x="565" y="496" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/verify-subscription</text>
+
+    <!-- Webhooks -->
+    <rect x="676" y="414" width="190" height="80" rx="7" fill="rgba(201,169,110,0.07)" stroke="rgba(201,169,110,0.25)" stroke-width="1"/>
+    <text x="771" y="433" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.6)" letter-spacing="1">WEBHOOKS</text>
+    <text x="771" y="451" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/subscription-webhook</text>
+    <text x="771" y="466" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.45)">⟶ plan:pro dans KV</text>
+    <text x="771" y="481" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/mollie-webhook</text>
+    <text x="771" y="496" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.45)">⟶ save order + email</text>
+
+    <!-- Orders -->
+    <rect x="882" y="414" width="160" height="80" rx="7" fill="rgba(201,169,110,0.07)" stroke="rgba(201,169,110,0.25)" stroke-width="1"/>
+    <text x="962" y="433" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.6)" letter-spacing="1">COMMANDES</text>
+    <text x="962" y="451" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">/orders  GET + POST</text>
+    <text x="962" y="466" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.45)">⟶ liste paginée</text>
+    <text x="962" y="481" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.45)">⟶ CA du tenant</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ROW 4 : EXTERNAL SERVICES + KV -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <!-- Arrows API → Services -->
+  <line x1="200" y1="512" x2="200" y2="552" stroke="#c9a96e" stroke-width="1.2" opacity="0.5" marker-end="url(#arrow)"/>
+  <line x1="360" y1="512" x2="360" y2="552" stroke="#c9a96e" stroke-width="1.2" opacity="0.5" marker-end="url(#arrow)"/>
+  <line x1="565" y1="512" x2="565" y2="552" stroke="#c9a96e" stroke-width="1.2" opacity="0.5" marker-end="url(#arrow)"/>
+  <line x1="771" y1="512" x2="771" y2="552" stroke="#c9a96e" stroke-width="1.2" opacity="0.5" marker-end="url(#arrow)"/>
+  <line x1="962" y1="512" x2="962" y2="552" stroke="#c9a96e" stroke-width="1.2" opacity="0.5" marker-end="url(#arrow)"/>
+
+  <!-- KV Store -->
+  <g filter="url(#shadow)">
+    <rect x="40" y="556" width="240" height="210" rx="12" fill="url(#gPurple)" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="160" y="582" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#a78bfa" letter-spacing="2">VERCEL KV</text>
+    <text x="160" y="598" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(167,139,250,0.5)">(Upstash Redis)</text>
+
+    <rect x="58" y="608" width="204" height="30" rx="5" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+    <text x="160" y="627" text-anchor="middle" font-size="10" font-family="monospace" fill="#d8b4fe">tenant:{domain}</text>
+
+    <rect x="58" y="644" width="204" height="30" rx="5" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+    <text x="160" y="663" text-anchor="middle" font-size="10" font-family="monospace" fill="#d8b4fe">credentials:{domain} 🔐</text>
+
+    <rect x="58" y="680" width="204" height="30" rx="5" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+    <text x="160" y="699" text-anchor="middle" font-size="10" font-family="monospace" fill="#d8b4fe">orders:{domain} [ ]</text>
+
+    <rect x="58" y="716" width="204" height="30" rx="5" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+    <text x="160" y="735" text-anchor="middle" font-size="10" font-family="monospace" fill="#d8b4fe">session:{token} TTL 24h</text>
+
+    <rect x="58" y="752" width="204" height="30" rx="5" fill="rgba(139,92,246,0.15)" stroke="rgba(139,92,246,0.3)" stroke-width="1"/>
+    <text x="160" y="771" text-anchor="middle" font-size="10" font-family="monospace" fill="#d8b4fe">tenants:list { set }</text>
+  </g>
+
+  <!-- Stripe per tenant -->
+  <g filter="url(#shadow)">
+    <rect x="310" y="556" width="230" height="130" rx="12" fill="url(#gGreen)" stroke="#2ecc71" stroke-width="1.5"/>
+    <text x="425" y="582" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#2ecc71" letter-spacing="2">STRIPE</text>
+    <text x="425" y="598" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(46,204,113,0.6)">compte du tenant (sk_live_...)</text>
+    <text x="425" y="624" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">🔑 clé secrète par tenant</text>
+    <text x="425" y="642" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">→ paiements one-time</text>
+    <text x="425" y="658" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">→ abonnement Pro (platform)</text>
+    <text x="425" y="676" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">webhook → KV plan:pro</text>
+  </g>
+
+  <!-- Mollie per tenant -->
+  <g filter="url(#shadow)">
+    <rect x="560" y="556" width="210" height="130" rx="12" fill="url(#gGreen)" stroke="#2ecc71" stroke-width="1.5"/>
+    <text x="665" y="582" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#2ecc71" letter-spacing="2">MOLLIE</text>
+    <text x="665" y="598" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(46,204,113,0.6)">compte du tenant (live_...)</text>
+    <text x="665" y="624" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">🔑 clé secrète par tenant</text>
+    <text x="665" y="642" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">→ Bancontact</text>
+    <text x="665" y="658" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">→ Belfius · KBC/CBC</text>
+    <text x="665" y="676" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">webhook → save order</text>
+  </g>
+
+  <!-- Resend -->
+  <g filter="url(#shadow)">
+    <rect x="790" y="556" width="200" height="130" rx="12" fill="url(#gDark)" stroke="rgba(201,169,110,0.5)" stroke-width="1.5"/>
+    <text x="890" y="582" text-anchor="middle" font-size="12" font-family="sans-serif" fill="#c9a96e" letter-spacing="2">RESEND</text>
+    <text x="890" y="598" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(201,169,110,0.5)">emails transactionnels</text>
+    <text x="890" y="624" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">"Ahmed Barber" &lt;no-reply&gt;</text>
+    <text x="890" y="642" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">reply-to: email du tenant</text>
+    <text x="890" y="660" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">→ confirmation commande</text>
+    <text x="890" y="676" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.65)">→ bienvenue Pro</text>
+  </g>
+
+  <!-- Tenant custom domains box -->
+  <g filter="url(#shadow)">
+    <rect x="310" y="700" width="680" height="80" rx="12" fill="rgba(201,169,110,0.05)" stroke="rgba(201,169,110,0.2)" stroke-width="1" stroke-dasharray="6,4"/>
+    <text x="650" y="724" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(201,169,110,0.5)" letter-spacing="2">DOMAINES PERSONNALISÉS — CNAME → cname.vercel-dns.com</text>
+    <text x="375" y="750" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(247,242,235,0.5)">ahmed-barber.be</text>
+    <text x="520" y="750" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(247,242,235,0.5)">barber-luxe.fr</text>
+    <text x="665" y="750" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(247,242,235,0.5)">shop.rasage.be</text>
+    <text x="810" y="750" text-anchor="middle" font-size="11" font-family="sans-serif" fill="rgba(247,242,235,0.5)">…100 clients</text>
+    <text x="960" y="750" text-anchor="middle" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.3)">SSL auto Vercel</text>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- LEGEND -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <g transform="translate(42, 556)">
+    <!-- Already positioned by KV box, legend goes below -->
+  </g>
+
+  <!-- Legend box -->
+  <g>
+    <text x="58" y="786" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.3)">🔐 Chiffré AES-256-GCM</text>
+    <text x="58" y="800" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.3)">└ ENCRYPTION_KEY (64 hex) requis dans Vercel</text>
+  </g>
+
+  <!-- Flow legend -->
+  <line x1="800" y1="795" x2="830" y2="795" stroke="#c9a96e" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.7"/>
+  <text x="836" y="799" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.3)">Requête / navigation</text>
+  <line x1="940" y1="795" x2="970" y2="795" stroke="#2ecc71" stroke-width="1.5" opacity="0.7"/>
+  <text x="976" y="799" font-size="10" font-family="sans-serif" fill="rgba(247,242,235,0.3)">Webhook</text>
+
+</svg>
+</body>
+</html>

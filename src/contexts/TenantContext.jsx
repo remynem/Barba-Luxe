@@ -145,13 +145,13 @@ export function TenantProvider({ children }) {
       // Persist via API
       const token = sessionStorage.getItem(tokenKey(domainRef.current));
       try {
-        await fetch("/api/save-tenant", {
+        await fetch("/api/admin", {
           method:  "POST",
           headers: {
             "Content-Type":  "application/json",
             "Authorization": `Bearer ${token}`,
           },
-          body: JSON.stringify({ config: next }),
+          body: JSON.stringify({ action: "save", config: next }),
         });
       } catch (err) {
         console.error("[saveTenant] API error:", err);
@@ -178,10 +178,10 @@ export function TenantProvider({ children }) {
     if (useKV && domain) {
       // Server-side auth → get session token
       try {
-        const res = await fetch("/api/admin-login", {
+        const res = await fetch("/api/admin", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ domain, password }),
+          body:    JSON.stringify({ action: "login", domain, password }),
         });
         if (!res.ok) return false;
         const { token } = await res.json();
@@ -214,10 +214,10 @@ export function TenantProvider({ children }) {
     if (!useKV) return; // credentials only make sense in KV mode
     const domain = domainRef.current;
     const t      = sessionStorage.getItem(tokenKey(domain));
-    const res    = await fetch("/api/save-credentials", {
+    const res    = await fetch("/api/admin", {
       method:  "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${t}` },
-      body:    JSON.stringify(creds),
+      body:    JSON.stringify({ action: "credentials", ...creds }),
     });
     if (!res.ok) throw new Error("Failed to save credentials");
     // Refresh tenant data to get updated hasStripe/hasMollie flags
