@@ -19,11 +19,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Create or retrieve price (29€/month)
-    let priceId = process.env.STRIPE_PRO_PRICE_ID;
+    // Resolve price ID: use env var if set AND valid, otherwise auto-create
+    let priceId = process.env.STRIPE_PRO_PRICE_ID || null;
+
+    if (priceId) {
+      // Verify the price actually exists in this Stripe account/mode
+      try {
+        await stripe.prices.retrieve(priceId);
+      } catch (e) {
+        if (e.code === "resource_missing") {
+          console.warn(`STRIPE_PRO_PRICE_ID "${priceId}" not found — auto-creating a new price`);
+          priceId = null; // fall through to auto-create below
+        } else {
+          throw e;
+        }
+      }
+    }
 
     if (!priceId) {
-      // Auto-create price if not configured (dev/demo mode)
+      // Auto-create price (no env var, or stale/invalid price ID)
       const price = await stripe.prices.create({
         unit_amount: 2900, // 29€ in centimes
         currency: "eur",
@@ -34,6 +48,7 @@ export default async function handler(req, res) {
         },
       });
       priceId = price.id;
+      console.log(`Auto-created Stripe price: ${priceId} — set STRIPE_PRO_PRICE_ID=${priceId} to avoid re-creating on each call`);
     }
 
     const session = await stripe.checkout.sessions.create({
