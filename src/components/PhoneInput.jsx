@@ -157,6 +157,7 @@ export default function PhoneInput({
             <div style={{ padding: "8px 8px 4px" }}>
               <input
                 type="text"
+                inputMode="search"
                 value={query}
                 onChange={e => { setQuery(e.target.value); setFocused(0); }}
                 onKeyDown={handleKeyDown}
@@ -169,7 +170,7 @@ export default function PhoneInput({
                   border: "1px solid rgba(201,169,110,0.2)",
                   borderRadius: "2px",
                   color: "var(--cream)",
-                  fontSize: "13px",
+                  fontSize: "16px", // prevents iOS Safari from zooming on focus
                   outline: "none",
                   boxSizing: "border-box",
                 }}
@@ -203,7 +204,8 @@ export default function PhoneInput({
                     display: "flex",
                     alignItems: "center",
                     gap: "10px",
-                    padding: "8px 12px",
+                    padding: "10px 12px",
+                    minHeight: "44px",
                     fontSize: "13px",
                     cursor: "pointer",
                     background: i === focused

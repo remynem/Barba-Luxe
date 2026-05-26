@@ -115,6 +115,7 @@ export default function CountryCombobox({ value, onChange, lang = "fr", error = 
           ref={inputRef}
           id={id}
           type="text"
+          inputMode="search"
           role="combobox"
           autoComplete="off"
           aria-autocomplete="list"
@@ -132,6 +133,7 @@ export default function CountryCombobox({ value, onChange, lang = "fr", error = 
             paddingLeft: (selected && !open) ? "44px" : "16px",
             borderColor: error ? "#E24B4A" : undefined,
             cursor: "pointer",
+            fontSize: "16px", // prevents iOS Safari from zooming on focus
           }}
         />
         {/* Chevron */}
@@ -184,7 +186,8 @@ export default function CountryCombobox({ value, onChange, lang = "fr", error = 
                 display: "flex",
                 alignItems: "center",
                 gap: "10px",
-                padding: "9px 14px",
+                padding: "10px 14px",
+                minHeight: "44px",
                 fontSize: "14px",
                 cursor: "pointer",
                 background: i === focused

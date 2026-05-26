@@ -177,7 +177,7 @@ function MollieSection({ lang, total, orderData, domain, onError }) {
 // ─── CheckoutPage principal ───────────────────────────────────────────────────
 export default function CheckoutPage({ lang, cart, setCart, setPage }) {
   const { config } = useConfig();
-  const { tenant, domain } = useTenant();
+  const { tenant, domain, decrementStock } = useTenant();
   // Use tenant's Stripe publishable key if configured, fallback to platform key
   const stripePromise = useMemo(
     () => getStripePromise(tenant?.stripePublishableKey),
@@ -246,13 +246,17 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
       .finally(() => setLoadingIntent(false));
   }, [step]);
 
-  // Vérifier retour Mollie depuis URL
+  // Vérifier retour Mollie depuis URL — decrement stock on redirect-back success
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("mollie") === "success") {
       window.history.replaceState({}, "", "/");
+      // Cart may be empty after page reload; decrement is best-effort here.
+      // The canonical decrement happens in the onSuccess callback for Stripe.
+      if (cart.length > 0) decrementStock(cart).catch(() => {});
       setOrdered(true);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (ordered) {
@@ -512,6 +516,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                             }),
                           }).catch(() => {});
                         }
+                        decrementStock(cart).catch(() => {});
                         setOrdered(true);
                       }}
                       onError={setPaymentError}
