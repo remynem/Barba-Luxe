@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { CONFIG, ConfigContext } from "./data/config.js";
 import { TenantProvider, useTenant } from "./contexts/TenantContext.jsx";
+import { useSEO } from "./hooks/useSEO.js";
 import { loadAdSense } from "./components/AdBanner.jsx";
 import Nav from "./components/Nav.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
@@ -141,28 +142,6 @@ function AppInner() {
     if (section && config.sections[section] === false) { setPage("home"); window.scrollTo(0, 0); }
   }, [config, page]);
 
-  // Update document title + html lang on every page/lang change
-  useEffect(() => {
-    const names = {
-      home: lang === "fr" ? "Accueil" : "Home",
-      products: lang === "fr" ? "Nos Produits" : "Our Products",
-      story: lang === "fr" ? "Notre Histoire" : "Our Story",
-      contact: lang === "fr" ? "Contact" : "Contact",
-      checkout: lang === "fr" ? "Commander" : "Checkout",
-      privacy: lang === "fr" ? "Confidentialité" : "Privacy",
-      legal: lang === "fr" ? "Mentions légales" : "Legal",
-      admin: "Admin",
-      pricing: lang === "fr" ? "Tarifs" : "Pricing",
-      superadmin: "Super Admin",
-    };
-    const shopName = `${tenant?.shopName || "Barba"} ${tenant?.shopNameItalic || "Luxe"}`;
-    const pageName = names[page];
-    document.title = pageName && page !== "home"
-      ? `${pageName} — ${shopName}`
-      : `${shopName} by ISH — ${lang === "fr" ? "Huiles de barbe artisanales · Bruxelles" : "Artisan Beard Oils · Brussels"}`;
-    document.documentElement.lang = lang;
-  }, [page, lang, tenant?.shopName, tenant?.shopNameItalic]);
-
   // Merge tenant config into ConfigContext — memoized to avoid rebuilding every render
   const mergedConfig = useMemo(() => ({
     ...config,
@@ -185,6 +164,9 @@ function AppInner() {
       ],
     },
   }), [config, tenant]);
+
+  // SEO: dynamic <head> meta, OG, JSON-LD — runs after mergedConfig is built
+  useSEO({ page, lang, tenant, config: mergedConfig });
 
   if (!loaded) return (
     <div style={{ minHeight:"100vh", background:"var(--night)", display:"flex", alignItems:"center", justifyContent:"center" }}>

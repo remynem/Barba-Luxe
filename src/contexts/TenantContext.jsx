@@ -8,7 +8,7 @@ export const DEFAULT_TENANT = {
   plan: "free", // "free" | "pro"
   shopName: "Barba",
   shopNameItalic: "Luxe",
-  subBrand: "by ISH",
+  subBrand: "",          // platform watermark — set explicitly per-tenant if needed
   tagline: { fr: "Formulées à Bruxelles. Senties partout.", en: "Crafted in Brussels. Felt everywhere." },
   logo: null, // URL or null (uses text logo)
   theme: {
@@ -33,14 +33,16 @@ export const DEFAULT_TENANT = {
     express:  { price: 8.9, label: { fr: "Express (1–2 jours)",  en: "Express (1–2 days)"  } },
   },
   products: [
-    { id:1, name:"Ambre Noir",     name_en:"Black Amber",    tagline:"Chaude comme le santal, vive comme le poivre.",         tagline_en:"Warm as sandalwood, bright as black pepper.",       desc:"Notre bestseller. Un mélange d'huile de jojoba, d'argan et d'extrait de vanille noire de Madagascar.", desc_en:"Our bestseller. A blend of jojoba, argan, and black vanilla extract from Madagascar.", price:34, typeId:"intense", type:"Intense",     type_en:"Intense",    scent:"Boisé & Épicé",  scent_en:"Woody & Spicy",  img:"p1_v1", views:["p1_v1","p1_v2"] },
-    { id:2, name:"Forêt Blanche",  name_en:"White Forest",   tagline:"L'essence du matin, distillée en flacon.",              tagline_en:"The essence of morning, bottled.",                  desc:"Pin sylvestre, eucalyptus, huile de noisette. Pour la barbe qui commence sa journée avec intention.",   desc_en:"Scots pine, eucalyptus, hazelnut oil. For the beard that starts its day with intention.",            price:28, typeId:"light",    type:"Légère",      type_en:"Light",      scent:"Frais & Herbacé", scent_en:"Fresh & Herbal", img:"p2_v1", views:["p2_v1","p2_v2"] },
-    { id:3, name:"Or Brun",        name_en:"Brown Gold",     tagline:"Richesse douce pour les barbes exigeantes.",            tagline_en:"Quiet richness for demanding beards.",              desc:"Argan du Maroc, rose de Damas, vétiver. Une texture soyeuse qui nourrit sans alourdir.",                desc_en:"Moroccan argan, Damascene rose, vetiver. A silky texture that nourishes without weighing down.",      price:38, typeId:"nourishing", type:"Nourrissante", type_en:"Nourishing", scent:"Floral & Terreux", scent_en:"Floral & Earthy", img:"p3_v1", views:["p3_v1","p3_v2"] },
-    { id:4, name:"Brume Maritime", name_en:"Sea Mist",       tagline:"Le grand large en trois gouttes.",                      tagline_en:"The open sea in three drops.",                      desc:"Sel marin, cèdre de l'Atlas, huile de chanvre. Légère, revigorante, mémorable.",                        desc_en:"Sea salt, Atlas cedar, hemp oil. Light, invigorating, unforgettable.",                               price:26, typeId:"light",    type:"Légère",      type_en:"Light",      scent:"Marin & Frais",   scent_en:"Marine & Fresh", img:"p4_v1", views:["p4_v1","p4_v2"] },
-    { id:5, name:"Nuit de Cèdre",  name_en:"Cedar Night",    tagline:"Pour les soirs qui méritent un peu d'attention.",      tagline_en:"For evenings that deserve some attention.",         desc:"Cèdre du Liban, benjoin, huile de ricin. La formule la plus enveloppante de la collection.",             desc_en:"Lebanese cedar, benzoin, castor oil. The most enveloping formula in the collection.",                price:36, typeId:"intense", type:"Intense",     type_en:"Intense",    scent:"Boisé & Chaud",   scent_en:"Woody & Warm",   img:"p5_v1", views:["p5_v1","p5_v2"] },
-    { id:6, name:"Miel d'Acacia",  name_en:"Acacia Honey",   tagline:"Douceur absolue pour les peaux sensibles.",            tagline_en:"Absolute softness for sensitive skin.",             desc:"Miel d'acacia, calendula, huile d'amande douce. Apaise, protège, nourrit en profondeur.",                desc_en:"Acacia honey, calendula, sweet almond oil. Soothes, protects, deeply nourishes.",                    price:32, typeId:"nourishing", type:"Nourrissante", type_en:"Nourishing", scent:"Doux & Sucré",    scent_en:"Soft & Sweet",   img:"p6_v1", views:["p6_v1","p6_v2"] },
+    { id:1, name:"Ambre Noir",     name_en:"Black Amber",    tagline:"Chaude comme le santal, vive comme le poivre.",         tagline_en:"Warm as sandalwood, bright as black pepper.",       desc:"Notre bestseller. Un mélange d'huile de jojoba, d'argan et d'extrait de vanille noire de Madagascar.", desc_en:"Our bestseller. A blend of jojoba, argan, and black vanilla extract from Madagascar.", price:34, stock:12, typeId:"intense", type:"Intense",     type_en:"Intense",    scent:"Boisé & Épicé",  scent_en:"Woody & Spicy",  img:"p1_v1", views:["p1_v1","p1_v2"] },
+    { id:2, name:"Forêt Blanche",  name_en:"White Forest",   tagline:"L'essence du matin, distillée en flacon.",              tagline_en:"The essence of morning, bottled.",                  desc:"Pin sylvestre, eucalyptus, huile de noisette. Pour la barbe qui commence sa journée avec intention.",   desc_en:"Scots pine, eucalyptus, hazelnut oil. For the beard that starts its day with intention.",            price:28, stock:8,  typeId:"light",    type:"Légère",      type_en:"Light",      scent:"Frais & Herbacé", scent_en:"Fresh & Herbal", img:"p2_v1", views:["p2_v1","p2_v2"] },
+    { id:3, name:"Or Brun",        name_en:"Brown Gold",     tagline:"Richesse douce pour les barbes exigeantes.",            tagline_en:"Quiet richness for demanding beards.",              desc:"Argan du Maroc, rose de Damas, vétiver. Une texture soyeuse qui nourrit sans alourdir.",                desc_en:"Moroccan argan, Damascene rose, vetiver. A silky texture that nourishes without weighing down.",      price:38, stock:5,  typeId:"nourishing", type:"Nourrissante", type_en:"Nourishing", scent:"Floral & Terreux", scent_en:"Floral & Earthy", img:"p3_v1", views:["p3_v1","p3_v2"] },
+    { id:4, name:"Brume Maritime", name_en:"Sea Mist",       tagline:"Le grand large en trois gouttes.",                      tagline_en:"The open sea in three drops.",                      desc:"Sel marin, cèdre de l'Atlas, huile de chanvre. Légère, revigorante, mémorable.",                        desc_en:"Sea salt, Atlas cedar, hemp oil. Light, invigorating, unforgettable.",                               price:26, stock:0,  typeId:"light",    type:"Légère",      type_en:"Light",      scent:"Marin & Frais",   scent_en:"Marine & Fresh", img:"p4_v1", views:["p4_v1","p4_v2"] },
+    { id:5, name:"Nuit de Cèdre",  name_en:"Cedar Night",    tagline:"Pour les soirs qui méritent un peu d'attention.",      tagline_en:"For evenings that deserve some attention.",         desc:"Cèdre du Liban, benjoin, huile de ricin. La formule la plus enveloppante de la collection.",             desc_en:"Lebanese cedar, benzoin, castor oil. The most enveloping formula in the collection.",                price:36, stock:15, typeId:"intense", type:"Intense",     type_en:"Intense",    scent:"Boisé & Chaud",   scent_en:"Woody & Warm",   img:"p5_v1", views:["p5_v1","p5_v2"] },
+    { id:6, name:"Miel d'Acacia",  name_en:"Acacia Honey",   tagline:"Douceur absolue pour les peaux sensibles.",            tagline_en:"Absolute softness for sensitive skin.",             desc:"Miel d'acacia, calendula, huile d'amande douce. Apaise, protège, nourrit en profondeur.",                desc_en:"Acacia honey, calendula, sweet almond oil. Soothes, protects, deeply nourishes.",                    price:32, stock:3,  typeId:"nourishing", type:"Nourrissante", type_en:"Nourishing", scent:"Doux & Sucré",    scent_en:"Soft & Sweet",   img:"p6_v1", views:["p6_v1","p6_v2"] },
   ],
-  // SHA-256 of "admin" — only used in localStorage mode (dev)
+  // Credential hash — only used in localStorage/dev mode. Production uses server-side auth.
+  // Format: plain SHA-256 (legacy) or "pbkdf2$iterations$salt$hash" (new).
+  // Default = SHA-256 of "admin" — CHANGE THIS before any real deployment.
   adminPasswordHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
 };
 
@@ -68,10 +70,70 @@ export function localizeProducts(products, lang) {
   }));
 }
 
-// ── SHA-256 helper (client-side, Web Crypto API) ──────────────────────────────
+// ── Credential storage key (separate from tenant config) ─────────────────────
+// Keeping credentials out of the tenant config object prevents them from being
+// accidentally exported, shared, or overwritten by a saveTenant() call.
+const CRED_KEY = "bl_admin_cred";
+
+// ── Crypto helpers ────────────────────────────────────────────────────────────
 async function sha256(msg) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Hash a password with PBKDF2-SHA256 (100 000 iterations).
+ * Returns a storable string: "pbkdf2$100000$<hex-salt>$<hex-key>"
+ */
+async function pbkdf2Hash(password, saltHex) {
+  const salt = new Uint8Array(saltHex.match(/../g).map(h => parseInt(h, 16)));
+  const key  = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), { name: "PBKDF2" }, false, ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 100_000 }, key, 256,
+  );
+  const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, "0")).join("");
+  return `pbkdf2$100000$${saltHex}$${hex}`;
+}
+
+function randomHex(bytes = 16) {
+  return Array.from(crypto.getRandomValues(new Uint8Array(bytes)))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Verify a password against a stored credential string.
+ * Supports both legacy SHA-256 and PBKDF2 formats.
+ */
+async function verifyPassword(password, stored) {
+  if (!stored) return false;
+  if (stored.startsWith("pbkdf2$")) {
+    const [, , saltHex] = stored.split("$");
+    const candidate = await pbkdf2Hash(password, saltHex);
+    return candidate === stored;
+  }
+  // Legacy: plain SHA-256
+  return (await sha256(password)) === stored;
+}
+
+/**
+ * Persist a new admin password using PBKDF2.
+ * Saves to a dedicated localStorage key so it never leaks via saveTenant().
+ */
+async function storeAdminPassword(password) {
+  const saltHex = randomHex(16);
+  const hash    = await pbkdf2Hash(password, saltHex);
+  localStorage.setItem(CRED_KEY, hash);
+  return hash; // also returned so callers can update adminPasswordHash if needed
+}
+
+/**
+ * Read the stored credential: bl_admin_cred takes priority,
+ * falls back to the legacy adminPasswordHash field in tenant config.
+ */
+function readStoredCredential(tenant) {
+  return localStorage.getItem(CRED_KEY) || tenant?.adminPasswordHash || null;
 }
 
 // ── Detect current tenant domain ──────────────────────────────────────────────
@@ -182,7 +244,7 @@ export function TenantProvider({ children }) {
     const domain = domainRef.current;
 
     if (useKV && domain) {
-      // Server-side auth → get session token
+      // Production: server-side auth via /api/admin — no secrets touch the client
       try {
         const res = await fetch("/api/admin", {
           method:  "POST",
@@ -192,15 +254,19 @@ export function TenantProvider({ children }) {
         if (!res.ok) return false;
         const { token } = await res.json();
         sessionStorage.setItem(tokenKey(domain), token);
+        sessionStorage.setItem(tokenKey(domain) + ":ts", Date.now().toString());
         setIsAdmin(true);
         return true;
       } catch {
         return false;
       }
     } else {
-      // Client-side auth → sha256 compare
-      const hash = await sha256(password);
-      if (hash === tenant.adminPasswordHash) {
+      // Dev/localStorage mode: client-side verification.
+      // bl_admin_cred (PBKDF2) takes priority over the legacy SHA-256 field in tenant config.
+      const stored = readStoredCredential(tenant);
+      const ok     = await verifyPassword(password, stored);
+      if (ok) {
+        sessionStorage.setItem("bl_admin_ts", Date.now().toString());
         setIsAdmin(true);
         return true;
       }
@@ -210,9 +276,25 @@ export function TenantProvider({ children }) {
 
   const adminLogout = () => {
     setIsAdmin(false);
+    sessionStorage.removeItem("bl_admin_ts");
     if (domainRef.current) {
       sessionStorage.removeItem(tokenKey(domainRef.current));
+      sessionStorage.removeItem(tokenKey(domainRef.current) + ":ts");
     }
+  };
+
+  /**
+   * Change the admin password (localStorage/dev mode only).
+   * Uses PBKDF2 and stores in a dedicated key — never mixed into tenant config.
+   * In KV/production mode this is handled server-side via /api/admin.
+   */
+  const setAdminPassword = async (newPassword) => {
+    if (useKV) return; // KV mode: handled by server, not this function
+    await storeAdminPassword(newPassword);
+    // Remove the legacy SHA-256 hash from tenant config so it can't be used as fallback
+    const next = { ...tenant, adminPasswordHash: null };
+    setTenantState(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (_) {}
   };
 
   // ── Save payment credentials ─────────────────────────────────────────────────
@@ -241,7 +323,7 @@ export function TenantProvider({ children }) {
   return (
     <TenantContext.Provider value={{
       tenant, saveTenant, saveCredentials, resetTenant,
-      isAdmin, adminLogin, adminLogout,
+      isAdmin, adminLogin, adminLogout, setAdminPassword,
       isPro, productLimit, loaded,
       useKV, domain: domainRef.current,
     }}>

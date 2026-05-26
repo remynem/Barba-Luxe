@@ -129,8 +129,10 @@ a { text-decoration: none; color: inherit; }
 .bl-product-price { font-family: var(--serif); font-size: 24px; color: var(--gold-light); }
 .bl-product-price span { font-size: 14px; font-family: var(--sans); opacity: 0.7; }
 .bl-add-btn { padding: 10px 20px; background: transparent; border: 1px solid rgba(201,169,110,0.4); color: var(--gold);
-  font-size: 12px; letter-spacing: 0.07em; text-transform: uppercase; border-radius: 2px; transition: all 0.25s; }
-.bl-add-btn:hover, .bl-add-btn.added { background: var(--gold); color: var(--night); border-color: var(--gold); }
+  font-size: 12px; letter-spacing: 0.07em; text-transform: uppercase; border-radius: 2px; transition: all 0.25s; cursor: pointer; }
+.bl-add-btn:hover:not(:disabled), .bl-add-btn.added { background: var(--gold); color: var(--night); border-color: var(--gold); }
+/* Out-of-stock state */
+.bl-add-btn.oos, .bl-add-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: rgba(247,242,235,0.15); color: rgba(247,242,235,0.4); }
 
 /* STORY PAGE */
 .bl-story-page { background: var(--night); }

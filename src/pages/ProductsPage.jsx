@@ -6,6 +6,27 @@ import { useReveal } from "../hooks/useReveal.js";
 import AdBanner from "../components/AdBanner.jsx";
 import Footer from "../components/Footer.jsx";
 
+// ── Stock status badge ────────────────────────────────────────────────────────
+function StockBadge({ stock, lang }) {
+  // stock === undefined → product predates inventory system → treat as in stock
+  if (stock === undefined || stock === null) return null;
+  if (stock === 0) return (
+    <div style={{ fontSize:"11px", fontWeight:600, color:"#E24B4A", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:"6px" }}>
+      {lang === "fr" ? "✗ Rupture de stock" : "✗ Out of stock"}
+    </div>
+  );
+  if (stock <= 3) return (
+    <div style={{ fontSize:"11px", fontWeight:600, color:"#E8A020", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:"6px" }}>
+      {lang === "fr" ? `⚑ Plus que ${stock} en stock` : `⚑ Only ${stock} left in stock`}
+    </div>
+  );
+  return (
+    <div style={{ fontSize:"11px", color:"rgba(247,242,235,0.4)", letterSpacing:"0.06em", marginBottom:"6px" }}>
+      {lang === "fr" ? "✓ En stock" : "✓ In stock"}
+    </div>
+  );
+}
+
 export default function ProductsPage({ lang, addToCart, setPage }) {
   const { config } = useConfig();
   const { tenant } = useTenant();
@@ -74,10 +95,20 @@ export default function ProductsPage({ lang, addToCart, setPage }) {
                 <h3 className="bl-product-name">{item.name}</h3>
                 <p className="bl-product-tagline">{item.tagline}</p>
                 <p className="bl-product-desc">{item.desc}</p>
+                <StockBadge stock={item.stock} lang={lang} />
                 <div className="bl-product-footer">
                   <div className="bl-product-price">{item.price}<span> €</span></div>
-                  <button className={`bl-add-btn${added[item.id] ? " added" : ""}`} onClick={() => handleAdd(item)}>
-                    {added[item.id] ? t.products.added : t.products.addCart}
+                  <button
+                    className={`bl-add-btn${added[item.id] ? " added" : ""}${item.stock === 0 ? " oos" : ""}`}
+                    onClick={() => item.stock !== 0 && handleAdd(item)}
+                    disabled={item.stock === 0}
+                    aria-label={item.stock === 0
+                      ? (lang === "fr" ? `${item.name} — rupture de stock` : `${item.name} — out of stock`)
+                      : undefined}
+                  >
+                    {item.stock === 0
+                      ? (lang === "fr" ? "Rupture de stock" : "Out of stock")
+                      : added[item.id] ? t.products.added : t.products.addCart}
                   </button>
                 </div>
               </div>

@@ -290,7 +290,7 @@ function ProductsSection({ tenant, onSave, isPro, productLimit }) {
 }
 
 function ProductForm({ initial, onSave, onCancel }) {
-  const empty = { name:"", name_en:"", tagline:"", tagline_en:"", desc:"", desc_en:"", price:"", typeId:"light", type:"Légère", type_en:"Light", scent:"", scent_en:"", img:"" };
+  const empty = { name:"", name_en:"", tagline:"", tagline_en:"", desc:"", desc_en:"", price:"", stock:"", typeId:"light", type:"Légère", type_en:"Light", scent:"", scent_en:"", img:"" };
   const [form, setForm] = useState(initial || empty);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -302,7 +302,12 @@ function ProductForm({ initial, onSave, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ ...form, price: parseFloat(form.price) || 0, id: initial?.id });
+    onSave({
+      ...form,
+      price: parseFloat(form.price) || 0,
+      stock: form.stock === "" ? undefined : Math.max(0, parseInt(form.stock, 10) || 0),
+      id: initial?.id,
+    });
   };
 
   return (
@@ -315,6 +320,9 @@ function ProductForm({ initial, onSave, onCancel }) {
         <AdminField label="Accroche 🇬🇧"><input className="bl-admin-input" value={form.tagline_en} onChange={e => set("tagline_en", e.target.value)} /></AdminField>
         <AdminField label="Prix (€)" required>
           <input className="bl-admin-input" type="number" min="0" step="0.01" value={form.price} onChange={e => set("price", e.target.value)} required />
+        </AdminField>
+        <AdminField label="Stock" note="Unités disponibles — laisser vide = illimité">
+          <input className="bl-admin-input" type="number" min="0" step="1" placeholder="∞" value={form.stock ?? ""} onChange={e => set("stock", e.target.value)} />
         </AdminField>
         <AdminField label="Type">
           <select className="bl-admin-input" value={form.typeId} onChange={e => {
@@ -428,38 +436,56 @@ function ShippingSection({ tenant, onSave }) {
 }
 
 // ── Password Section ──────────────────────────────────────────────────────────
-function PasswordSection({ onSave }) {
-  const [form, setForm] = useState({ current: "", next: "", confirm: "" });
-  const [msg, setMsg] = useState(null);
+function PasswordSection() {
+  const { setAdminPassword, adminLogin, useKV } = useTenant();
+  const [form, setForm]   = useState({ current: "", next: "", confirm: "" });
+  const [msg, setMsg]     = useState(null);
+  const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  const sha256 = async (msg) => {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-  };
 
   const handleSave = async () => {
     if (form.next !== form.confirm) { setMsg({ type: "error", text: "Les mots de passe ne correspondent pas." }); return; }
-    if (form.next.length < 6) { setMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
-    const hash = await sha256(form.next);
-    onSave({ adminPasswordHash: hash });
-    setMsg({ type: "success", text: "Mot de passe mis à jour." });
-    setForm({ current: "", next: "", confirm: "" });
+    if (form.next.length < 8)       { setMsg({ type: "error", text: "Le mot de passe doit faire au moins 8 caractères." }); return; }
+    // Verify current password before allowing the change
+    const currentOk = await adminLogin(form.current);
+    if (!currentOk) { setMsg({ type: "error", text: "Mot de passe actuel incorrect." }); return; }
+    setSaving(true);
+    try {
+      if (useKV) {
+        // KV/production: password change is handled server-side (not implemented here)
+        setMsg({ type: "error", text: "Changement de mot de passe non disponible en mode production via ce panneau." });
+      } else {
+        // localStorage/dev: PBKDF2 hash stored in bl_admin_cred (separate from tenant config)
+        await setAdminPassword(form.next);
+        setMsg({ type: "success", text: "Mot de passe mis à jour avec PBKDF2 (100 000 itérations)." });
+        setForm({ current: "", next: "", confirm: "" });
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="bl-admin-section">
       <h2 className="bl-admin-section-title">Changer le mot de passe admin</h2>
+      {!useKV && (
+        <div style={{ background:"rgba(201,169,110,0.08)", border:"1px solid rgba(201,169,110,0.2)", borderRadius:"4px", padding:"12px 16px", marginBottom:"24px", fontSize:"13px", color:"rgba(247,242,235,0.65)", lineHeight:1.6 }}>
+          🔒 <strong>Mode local :</strong> Le mot de passe est haché avec PBKDF2-SHA256 (100 000 itérations) et stocké dans <code>localStorage</code> séparément de la configuration boutique. En production sur un domaine personnalisé, l'authentification est gérée côté serveur.
+        </div>
+      )}
       <div style={{ maxWidth: "420px" }}>
-        <AdminField label="Nouveau mot de passe">
-          <input className="bl-admin-input" type="password" value={form.next} onChange={e => set("next", e.target.value)} />
+        <AdminField label="Mot de passe actuel">
+          <input className="bl-admin-input" type="password" autoComplete="current-password" value={form.current} onChange={e => set("current", e.target.value)} />
         </AdminField>
-        <AdminField label="Confirmer">
-          <input className="bl-admin-input" type="password" value={form.confirm} onChange={e => set("confirm", e.target.value)} />
+        <AdminField label="Nouveau mot de passe (8 caractères min.)">
+          <input className="bl-admin-input" type="password" autoComplete="new-password" value={form.next} onChange={e => set("next", e.target.value)} />
+        </AdminField>
+        <AdminField label="Confirmer le nouveau mot de passe">
+          <input className="bl-admin-input" type="password" autoComplete="new-password" value={form.confirm} onChange={e => set("confirm", e.target.value)} />
         </AdminField>
         {msg && <p className={`bl-admin-${msg.type}`}>{msg.text}</p>}
-        <button className="bl-admin-btn-primary" onClick={handleSave} disabled={!form.next || !form.confirm}>
-          Changer le mot de passe
+        <button className="bl-admin-btn-primary" onClick={handleSave} disabled={saving || !form.current || !form.next || !form.confirm}>
+          {saving ? "Mise à jour…" : "Changer le mot de passe"}
         </button>
       </div>
     </div>
@@ -828,10 +854,39 @@ function LegalSection({ tenant, onSave }) {
   );
 }
 
+// ── Inactivity logout (30 min) ────────────────────────────────────────────────
+const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+
+function useInactivityLogout(adminLogout) {
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    const reset = () => {
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        adminLogout();
+        alert("Session expirée après 30 minutes d'inactivité. Veuillez vous reconnecter.");
+      }, INACTIVITY_MS);
+    };
+
+    const events = ["mousemove", "keydown", "pointerdown", "scroll", "touchstart"];
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset(); // start timer immediately
+
+    return () => {
+      clearTimeout(timerRef.current);
+      events.forEach(e => window.removeEventListener(e, reset));
+    };
+  }, [adminLogout]);
+}
+
 // ── Main AdminPage ────────────────────────────────────────────────────────────
 export default function AdminPage({ setPage }) {
   const { tenant, saveTenant, resetTenant, isAdmin, adminLogin, adminLogout, isPro, productLimit, useKV } = useTenant();
   const [tab, setTab] = useState("identity");
+
+  // Auto-logout after 30 min of inactivity — only active when logged in
+  useInactivityLogout(isAdmin ? adminLogout : () => {});
 
   if (!isAdmin) {
     return <AdminLogin onLogin={adminLogin} onBack={() => setPage("home")} />;
@@ -839,6 +894,14 @@ export default function AdminPage({ setPage }) {
 
   return (
     <div className="bl-admin">
+      {/* Dev-mode notice — only shown in localhost/localStorage mode */}
+      {!useKV && (
+        <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:9999, background:"rgba(28,18,9,0.95)", borderTop:"1px solid rgba(201,169,110,0.2)", padding:"6px 20px", fontSize:"11px", color:"rgba(247,242,235,0.45)", display:"flex", alignItems:"center", gap:"8px" }}>
+          <span style={{ color:"var(--gold)", fontWeight:600 }}>⚠ Mode local</span>
+          — Données stockées dans localStorage · Auth client-side · Session expire après 30 min d'inactivité · En production, passez sur un domaine personnalisé pour un stockage sécurisé côté serveur.
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className="bl-admin-sidebar">
         <div className="bl-admin-sidebar-logo">
@@ -864,7 +927,7 @@ export default function AdminPage({ setPage }) {
       </aside>
 
       {/* Content */}
-      <main className="bl-admin-main">
+      <main className="bl-admin-main" style={{ paddingBottom: !useKV ? "48px" : undefined }}>
         {tab === "identity" && <IdentitySection tenant={tenant} onSave={saveTenant} />}
         {tab === "theme"    && <ThemeSection tenant={tenant} onSave={saveTenant} />}
         {tab === "products" && <ProductsSection tenant={tenant} onSave={saveTenant} isPro={isPro} productLimit={productLimit} />}
@@ -873,7 +936,7 @@ export default function AdminPage({ setPage }) {
         {tab === "payments" && <PaymentsSection tenant={tenant} useKV={useKV} />}
         {tab === "orders"   && <OrdersSection useKV={useKV} />}
         {tab === "legal"    && <LegalSection tenant={tenant} onSave={saveTenant} />}
-        {tab === "password" && <PasswordSection onSave={saveTenant} />}
+        {tab === "password" && <PasswordSection />}
         {tab === "plan"     && <PlanSection tenant={tenant} isPro={isPro} onSave={saveTenant} resetTenant={resetTenant} />}
       </main>
     </div>
