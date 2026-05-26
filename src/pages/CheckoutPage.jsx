@@ -345,8 +345,8 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                   { key: "lastName",  label: t.checkout.lastName },
                 ].map(f => (
                   <div className="bl-form-group" key={f.key}>
-                    <label className="bl-form-label">{f.label}</label>
-                    <input className="bl-form-input" value={shipFields[f.key]}
+                    <label className="bl-form-label" htmlFor={`ship-${f.key}`}>{f.label}</label>
+                    <input id={`ship-${f.key}`} className="bl-form-input" value={shipFields[f.key]}
                       onChange={e => { setShipFields(s => ({...s, [f.key]: e.target.value})); setShipErrors(er => ({...er, [f.key]: undefined})); }}
                       style={shipErrors[f.key] ? { borderColor: "#E24B4A" } : {}} />
                     {shipErrors[f.key] && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors[f.key]}</div>}
@@ -354,14 +354,14 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                 ))}
               </div>
               <div className="bl-form-group">
-                <label className="bl-form-label">{lang === "fr" ? "Email (pour la confirmation)" : "Email (for confirmation)"}</label>
-                <input className="bl-form-input" type="email" value={shipFields.email || ""}
+                <label className="bl-form-label" htmlFor="ship-email">{lang === "fr" ? "Email (pour la confirmation)" : "Email (for confirmation)"}</label>
+                <input id="ship-email" className="bl-form-input" type="email" value={shipFields.email || ""}
                   onChange={e => setShipFields(s => ({...s, email: e.target.value}))}
                   placeholder={lang === "fr" ? "votre@email.com" : "your@email.com"} />
               </div>
               <div className="bl-form-group">
-                <label className="bl-form-label">{t.checkout.address}</label>
-                <input className="bl-form-input" value={shipFields.address}
+                <label className="bl-form-label" htmlFor="ship-address">{t.checkout.address}</label>
+                <input id="ship-address" className="bl-form-input" value={shipFields.address}
                   onChange={e => { setShipFields(s => ({...s, address: e.target.value})); setShipErrors(er => ({...er, address: undefined})); }}
                   style={shipErrors.address ? { borderColor: "#E24B4A" } : {}} />
                 {shipErrors.address && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors.address}</div>}
@@ -372,8 +372,8 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                   { key: "zip",  label: t.checkout.zip },
                 ].map(f => (
                   <div className="bl-form-group" key={f.key}>
-                    <label className="bl-form-label">{f.label}</label>
-                    <input className="bl-form-input" value={shipFields[f.key]}
+                    <label className="bl-form-label" htmlFor={`ship-${f.key}`}>{f.label}</label>
+                    <input id={`ship-${f.key}`} className="bl-form-input" value={shipFields[f.key]}
                       onChange={e => { setShipFields(s => ({...s, [f.key]: e.target.value})); setShipErrors(er => ({...er, [f.key]: undefined})); }}
                       style={shipErrors[f.key] ? { borderColor: "#E24B4A" } : {}} />
                     {shipErrors[f.key] && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {shipErrors[f.key]}</div>}
@@ -381,7 +381,7 @@ export default function CheckoutPage({ lang, cart, setCart, setPage }) {
                 ))}
               </div>
               <div className="bl-form-group">
-                <label className="bl-form-label">{t.checkout.country}</label>
+                <label className="bl-form-label" htmlFor="ship-country">{t.checkout.country}</label>
                 <CountryCombobox
                   value={shipFields.country}
                   lang={lang}

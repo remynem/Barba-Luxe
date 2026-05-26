@@ -99,11 +99,7 @@ export default function CountryCombobox({ value, onChange, lang = "fr", error = 
       {/* Combobox input */}
       <div
         style={{ position: "relative" }}
-        role="combobox"
-        aria-expanded={open}
-        aria-haspopup="listbox"
         aria-owns={listId}
-        aria-controls={listId}
       >
         {/* Flag prefix */}
         {selected && !open && (

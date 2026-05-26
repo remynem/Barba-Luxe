@@ -76,8 +76,9 @@ export default function ContactPage({ lang, setPage }) {
             <form onSubmit={handleSubmit} noValidate>
               <div className="bl-form-row-2">
                 <div className="bl-form-group">
-                  <label className="bl-form-label">{t.contact.name}</label>
+                  <label className="bl-form-label" htmlFor="contact-name">{t.contact.name}</label>
                   <input
+                    id="contact-name"
                     className="bl-form-input"
                     value={form.name}
                     onChange={e => setField("name", e.target.value)}
@@ -87,8 +88,9 @@ export default function ContactPage({ lang, setPage }) {
                   {formErrors.name && <div style={{ fontSize: 12, color: "#E24B4A", marginTop: 4 }}>⚠ {formErrors.name}</div>}
                 </div>
                 <div className="bl-form-group">
-                  <label className="bl-form-label">{t.contact.email}</label>
+                  <label className="bl-form-label" htmlFor="contact-email">{t.contact.email}</label>
                   <input
+                    id="contact-email"
                     className="bl-form-input"
                     type="email"
                     value={form.email}
@@ -107,8 +109,9 @@ export default function ContactPage({ lang, setPage }) {
                 </select>
               </div>
               <div className="bl-form-group">
-                <label className="bl-form-label">{t.contact.message}</label>
+                <label className="bl-form-label" htmlFor="contact-message">{t.contact.message}</label>
                 <textarea
+                  id="contact-message"
                   className="bl-form-input bl-form-textarea"
                   value={form.message}
                   onChange={e => setField("message", e.target.value)}
