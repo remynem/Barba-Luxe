@@ -9,6 +9,9 @@ export const DEFAULT_TENANT = {
   shopName: "Barba",
   shopNameItalic: "Luxe",
   subBrand: "",          // platform watermark — set explicitly per-tenant if needed
+  since: "2019",         // founding year, used in SEO descriptions
+  priceRange: "€€",      // €, €€, €€€ — used in JSON-LD LocalBusiness
+  ogImageUrl: "",        // absolute URL for og:image / twitter:image (1200×630 recommended)
   tagline: { fr: "Formulées à Bruxelles. Senties partout.", en: "Crafted in Brussels. Felt everywhere." },
   logo: null, // URL or null (uses text logo)
   theme: {
@@ -20,6 +23,17 @@ export const DEFAULT_TENANT = {
     email:   "remy@ish-group.eu",
     phone:   "+32 2 000 00 00",
     address: { fr: "Rue du Bailli 12, 1050 Bruxelles", en: "12 Rue du Bailli, 1050 Brussels" },
+    streetAddress: "Rue du Bailli 12",
+    city:         "Bruxelles",
+    postalCode:   "1050",
+    countryCode:  "BE",
+    openingHours: ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"],
+    socialLinks: {
+      instagram: "",
+      facebook:  "",
+      tiktok:    "",
+      youtube:   "",
+    },
   },
   hero: {
     title1: { fr: "Chaque matin",    en: "Every morning"   },
@@ -40,6 +54,18 @@ export const DEFAULT_TENANT = {
     { id:5, name:"Nuit de Cèdre",  name_en:"Cedar Night",    tagline:"Pour les soirs qui méritent un peu d'attention.",      tagline_en:"For evenings that deserve some attention.",         desc:"Cèdre du Liban, benjoin, huile de ricin. La formule la plus enveloppante de la collection.",             desc_en:"Lebanese cedar, benzoin, castor oil. The most enveloping formula in the collection.",                price:36, stock:15, typeId:"intense", type:"Intense",     type_en:"Intense",    scent:"Boisé & Chaud",   scent_en:"Woody & Warm",   img:"p5_v1", views:["p5_v1","p5_v2"] },
     { id:6, name:"Miel d'Acacia",  name_en:"Acacia Honey",   tagline:"Douceur absolue pour les peaux sensibles.",            tagline_en:"Absolute softness for sensitive skin.",             desc:"Miel d'acacia, calendula, huile d'amande douce. Apaise, protège, nourrit en profondeur.",                desc_en:"Acacia honey, calendula, sweet almond oil. Soothes, protects, deeply nourishes.",                    price:32, stock:3,  typeId:"nourishing", type:"Nourrissante", type_en:"Nourishing", scent:"Doux & Sucré",    scent_en:"Soft & Sweet",   img:"p6_v1", views:["p6_v1","p6_v2"] },
   ],
+  // ── Inventory: stock levels keyed by product ID ────────────────────────────
+  // Decoupled from product objects so purchases update only this map.
+  // Fallback chain: inventory[id] → product.stock → null (treated as unlimited).
+  inventory: { 1: 12, 2: 8, 3: 5, 4: 0, 5: 15, 6: 3 },
+
+  // ── Analytics ──────────────────────────────────────────────────────────────
+  analytics: {
+    provider:       null,   // null | "plausible" | "ga4"
+    plausibleDomain: "",    // e.g. "barbaluxe.be"
+    ga4Id:           "",    // e.g. "G-XXXXXXXXXX"
+  },
+
   // Credential hash — only used in localStorage/dev mode. Production uses server-side auth.
   // Format: plain SHA-256 (legacy) or "pbkdf2$iterations$salt$hash" (new).
   // Default = SHA-256 of "admin" — CHANGE THIS before any real deployment.
@@ -48,6 +74,50 @@ export const DEFAULT_TENANT = {
 
 export const FREE_PRODUCT_LIMIT = 10;
 const STORAGE_KEY = "bl_tenant_config";
+const AUDIT_KEY   = "bl_audit_log";
+
+// ── Inventory helpers ─────────────────────────────────────────────────────────
+/**
+ * Resolve live stock for a product.
+ * Priority: tenant.inventory[id] → product.stock → null (unlimited).
+ */
+export function getStock(productId, tenant) {
+  const fromInventory = tenant?.inventory?.[productId];
+  if (fromInventory !== undefined) return fromInventory;
+  const product = tenant?.products?.find(p => p.id === productId);
+  return product?.stock ?? null;
+}
+
+/**
+ * Return a new inventory map after decrementing stock for each cart item.
+ * Clamps at 0 — never goes negative.
+ */
+export function applyCartToInventory(cart, tenant) {
+  const current = { ...(tenant?.inventory || {}) };
+  for (const item of cart) {
+    const id = item.id;
+    const stock = getStock(id, tenant);
+    if (stock !== null) {
+      current[id] = Math.max(0, (current[id] ?? stock) - item.qty);
+    }
+  }
+  return current;
+}
+
+// ── Audit log helpers ─────────────────────────────────────────────────────────
+export function appendAuditLog(action, detail = {}) {
+  try {
+    const raw  = localStorage.getItem(AUDIT_KEY);
+    const log  = raw ? JSON.parse(raw) : [];
+    log.unshift({ action, detail, ts: new Date().toISOString() });
+    // Keep last 200 entries
+    localStorage.setItem(AUDIT_KEY, JSON.stringify(log.slice(0, 200)));
+  } catch (_) {}
+}
+
+export function readAuditLog() {
+  try { return JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]"); } catch { return []; }
+}
 
 // ── Resolve product image (key → IMGS or raw URL) ────────────────────────────
 export function resolveImg(img) {
@@ -210,24 +280,34 @@ export function TenantProvider({ children }) {
     setTenantState(next);
 
     if (useKV) {
-      // Persist via API
       const token = sessionStorage.getItem(tokenKey(domainRef.current));
       try {
         await fetch("/api/admin", {
           method:  "POST",
-          headers: {
-            "Content-Type":  "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
           body: JSON.stringify({ action: "save", config: next }),
         });
       } catch (err) {
         console.error("[saveTenant] API error:", err);
       }
     } else {
-      // Persist to localStorage
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch (_) {}
+      // Strip adminPasswordHash before persisting — credentials live in bl_admin_cred only
+      const { adminPasswordHash: _omit, ...safe } = next;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(safe)); } catch (_) {}
     }
+
+    // Audit log (localStorage mode only — KV audit handled server-side)
+    if (!useKV) {
+      const changedKeys = Object.keys(updates);
+      appendAuditLog("save", { keys: changedKeys });
+    }
+  };
+
+  // ── Decrement stock after a completed purchase ───────────────────────────────
+  const decrementStock = async (cart) => {
+    const newInventory = applyCartToInventory(cart, tenant);
+    await saveTenant({ inventory: newInventory });
+    appendAuditLog("order", { items: cart.map(i => ({ id: i.id, name: i.name, qty: i.qty })) });
   };
 
   const resetTenant = () => {
@@ -324,6 +404,7 @@ export function TenantProvider({ children }) {
     <TenantContext.Provider value={{
       tenant, saveTenant, saveCredentials, resetTenant,
       isAdmin, adminLogin, adminLogout, setAdminPassword,
+      decrementStock,
       isPro, productLimit, loaded,
       useKV, domain: domainRef.current,
     }}>

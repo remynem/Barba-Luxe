@@ -28,8 +28,8 @@ export function useSEO({ page, lang, tenant, config }) {
           ? "Huiles de barbe artisanales · Bruxelles"
           : "Artisan Beard Oils · Brussels"}`,
         description: lang === "fr"
-          ? `${tagline} Découvrez les huiles de barbe artisanales ${shopName}, formulées avec des ingrédients naturels depuis ${config.brand?.since || "2019"}.`
-          : `${tagline} Discover ${shopName} artisan beard oils, crafted with natural ingredients since ${config.brand?.since || "2019"}.`,
+          ? `${tagline} Découvrez les huiles de barbe artisanales ${shopName}, formulées avec des ingrédients naturels depuis ${tenant.since || config.brand?.since || "2019"}.`
+          : `${tagline} Discover ${shopName} artisan beard oils, crafted with natural ingredients since ${tenant.since || config.brand?.since || "2019"}.`,
         path: "/",
       },
       products: {
@@ -42,8 +42,8 @@ export function useSEO({ page, lang, tenant, config }) {
       story: {
         title: `${lang === "fr" ? "Notre Histoire" : "Our Story"} | ${shopName}`,
         description: lang === "fr"
-          ? `L'histoire de ${shopName} : une passion artisanale née à Bruxelles en ${config.brand?.since || "2019"}. Découvrez nos valeurs et notre savoir-faire.`
-          : `The story of ${shopName}: an artisan passion born in Brussels in ${config.brand?.since || "2019"}. Discover our values and expertise.`,
+          ? `L'histoire de ${shopName} : une passion artisanale née à Bruxelles en ${tenant.since || config.brand?.since || "2019"}. Découvrez nos valeurs et notre savoir-faire.`
+          : `The story of ${shopName}: an artisan passion born in Brussels in ${tenant.since || config.brand?.since || "2019"}. Discover our values and expertise.`,
         path: "/?p=story",
       },
       contact: {
@@ -101,7 +101,7 @@ export function useSEO({ page, lang, tenant, config }) {
     setLink("alternate", `${origin}${m.path}`, { hreflang: "fr-BE" });
 
     // ── Open Graph ─────────────────────────────────────────────────────────
-    const ogImage = `${origin}/og-image.png`;
+    const ogImage = tenant.ogImageUrl || `${origin}/og-image.png`;
     setMeta("og:type",         m.type || "website",     true);
     setMeta("og:site_name",    shopName,                 true);
     setMeta("og:url",          canonical,                true);
@@ -130,12 +130,16 @@ export function useSEO({ page, lang, tenant, config }) {
     }
 
     const address = {
-      "@type": "PostalAddress",
-      streetAddress:    lang === "fr" ? "Rue du Bailli 12" : "12 Rue du Bailli",
-      addressLocality:  config.brand?.city || "Bruxelles",
-      postalCode:       "1050",
-      addressCountry:   "BE",
+      "@type":          "PostalAddress",
+      streetAddress:    tenant.contact?.streetAddress || "Rue du Bailli 12",
+      addressLocality:  tenant.contact?.city          || "Bruxelles",
+      postalCode:       tenant.contact?.postalCode    || "1050",
+      addressCountry:   tenant.contact?.countryCode   || "BE",
     };
+
+    // Build sameAs from tenant social links
+    const socialLinks = tenant.contact?.socialLinks || {};
+    const sameAs = Object.values(socialLinks).filter(Boolean);
 
     const orgSchema = {
       "@context": "https://schema.org",
@@ -143,17 +147,18 @@ export function useSEO({ page, lang, tenant, config }) {
       "@id": `${origin}/#organization`,
       name:        shopName,
       url:         origin,
-      logo:        `${origin}/icons/icon-192.png`,
+      logo:        tenant.logo || `${origin}/icons/icon-192.png`,
       image:       ogImage,
       description: tagline,
-      telephone:   config.brand?.phone  || tenant.contact?.phone,
-      email:       config.brand?.email  || tenant.contact?.email,
+      telephone:   tenant.contact?.phone || config.brand?.phone,
+      email:       tenant.contact?.email || config.brand?.email,
       address,
-      openingHours:  ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"],
-      priceRange:    "€€",
+      openingHours:  tenant.contact?.openingHours || ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"],
+      priceRange:    tenant.priceRange    || "€€",
+      foundingDate:  tenant.since         || "2019",
       currenciesAccepted: "EUR",
       paymentAccepted:    "Credit Card, Bancontact",
-      sameAs: [],
+      sameAs: sameAs.length ? sameAs : [],
     };
 
     if (page === "products" && tenant?.products?.length) {

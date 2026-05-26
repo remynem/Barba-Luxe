@@ -43,6 +43,7 @@ vi.mock('../../contexts/TenantContext.jsx', () => ({
     tenant: { stripePublishableKey: null, shopName: 'Barba Luxe' },
     domain: null,
     loaded: true,
+    decrementStock: vi.fn().mockResolvedValue(undefined),
   }),
 }))
 

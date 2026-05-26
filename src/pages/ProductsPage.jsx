@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { T } from "../data/translations.js";
 import { useConfig } from "../data/config.js";
-import { useTenant, localizeProducts } from "../contexts/TenantContext.jsx";
+import { useTenant, localizeProducts, getStock } from "../contexts/TenantContext.jsx";
 import { useReveal } from "../hooks/useReveal.js";
 import AdBanner from "../components/AdBanner.jsx";
 import Footer from "../components/Footer.jsx";
@@ -91,26 +91,32 @@ export default function ProductsPage({ lang, addToCart, setPage }) {
                 )}
               </div>
               <div className="bl-product-info">
-                <div className="bl-product-scent">{item.scent}</div>
-                <h3 className="bl-product-name">{item.name}</h3>
-                <p className="bl-product-tagline">{item.tagline}</p>
-                <p className="bl-product-desc">{item.desc}</p>
-                <StockBadge stock={item.stock} lang={lang} />
-                <div className="bl-product-footer">
-                  <div className="bl-product-price">{item.price}<span> €</span></div>
-                  <button
-                    className={`bl-add-btn${added[item.id] ? " added" : ""}${item.stock === 0 ? " oos" : ""}`}
-                    onClick={() => item.stock !== 0 && handleAdd(item)}
-                    disabled={item.stock === 0}
-                    aria-label={item.stock === 0
-                      ? (lang === "fr" ? `${item.name} — rupture de stock` : `${item.name} — out of stock`)
-                      : undefined}
-                  >
-                    {item.stock === 0
-                      ? (lang === "fr" ? "Rupture de stock" : "Out of stock")
-                      : added[item.id] ? t.products.added : t.products.addCart}
-                  </button>
-                </div>
+                {(() => {
+                  const liveStock = getStock(item.id, tenant);
+                  const isOOS = liveStock === 0;
+                  return (<>
+                    <div className="bl-product-scent">{item.scent}</div>
+                    <h3 className="bl-product-name">{item.name}</h3>
+                    <p className="bl-product-tagline">{item.tagline}</p>
+                    <p className="bl-product-desc">{item.desc}</p>
+                    <StockBadge stock={liveStock} lang={lang} />
+                    <div className="bl-product-footer">
+                      <div className="bl-product-price">{item.price}<span> €</span></div>
+                      <button
+                        className={`bl-add-btn${added[item.id] ? " added" : ""}${isOOS ? " oos" : ""}`}
+                        onClick={() => !isOOS && handleAdd(item)}
+                        disabled={isOOS}
+                        aria-label={isOOS
+                          ? (lang === "fr" ? `${item.name} — rupture de stock` : `${item.name} — out of stock`)
+                          : undefined}
+                      >
+                        {isOOS
+                          ? (lang === "fr" ? "Rupture de stock" : "Out of stock")
+                          : added[item.id] ? t.products.added : t.products.addCart}
+                      </button>
+                    </div>
+                  </>);
+                })()}
               </div>
             </div>
           );

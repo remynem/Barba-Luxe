@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useTenant, FREE_PRODUCT_LIMIT, resolveImg } from "../contexts/TenantContext.jsx";
+import { useTenant, FREE_PRODUCT_LIMIT, resolveImg, readAuditLog } from "../contexts/TenantContext.jsx";
 
 const TABS = [
   { id: "identity",    icon: "🏪", label: "Identité" },
@@ -8,9 +8,11 @@ const TABS = [
   { id: "contact",     icon: "📬", label: "Contact" },
   { id: "shipping",    icon: "🚚", label: "Livraison" },
   { id: "payments",    icon: "💳", label: "Paiements" },
+  { id: "analytics",   icon: "📊", label: "Analytics" },
   { id: "orders",      icon: "📋", label: "Commandes" },
   { id: "legal",       icon: "⚖️",  label: "Légal" },
   { id: "password",    icon: "🔒", label: "Sécurité" },
+  { id: "audit",       icon: "🗒️", label: "Audit" },
   { id: "plan",        icon: "⭐", label: "Abonnement" },
 ];
 
@@ -78,6 +80,9 @@ function IdentitySection({ tenant, onSave }) {
     hero_cta_fr:    tenant.hero?.cta?.fr || "",
     hero_cta_en:    tenant.hero?.cta?.en || "",
     logo:           tenant.logo || "",
+    ogImageUrl:     tenant.ogImageUrl || "",
+    since:          tenant.since || "",
+    priceRange:     tenant.priceRange || "€€",
   });
   const [saved, setSaved] = useState(false);
 
@@ -89,6 +94,9 @@ function IdentitySection({ tenant, onSave }) {
       shopNameItalic: form.shopNameItalic,
       subBrand:       form.subBrand,
       logo:           form.logo || null,
+      ogImageUrl:     form.ogImageUrl || "",
+      since:          form.since || "",
+      priceRange:     form.priceRange || "€€",
       tagline:        { fr: form.tagline_fr, en: form.tagline_en },
       hero: {
         title1: { fr: form.hero_title1_fr, en: form.hero_title1_en },
@@ -111,11 +119,25 @@ function IdentitySection({ tenant, onSave }) {
         <AdminField label="Nom italique" note="Affiché en italique doré">
           <input className="bl-admin-input" value={form.shopNameItalic} onChange={e => set("shopNameItalic", e.target.value)} />
         </AdminField>
-        <AdminField label="Sous-marque" note='Ex : "by ISH"'>
+        <AdminField label="Sous-marque" note='Ex : "by ISH" — laisser vide pour masquer'>
           <input className="bl-admin-input" value={form.subBrand} onChange={e => set("subBrand", e.target.value)} />
         </AdminField>
         <AdminField label="Logo (URL)" note="Optionnel — laissez vide pour le logo texte">
           <input className="bl-admin-input" placeholder="https://..." value={form.logo} onChange={e => set("logo", e.target.value)} />
+        </AdminField>
+        <AdminField label="Image OG (URL)" note="Image partagée sur réseaux sociaux (1200×630 px recommandé)">
+          <input className="bl-admin-input" placeholder="https://..." value={form.ogImageUrl} onChange={e => set("ogImageUrl", e.target.value)} />
+        </AdminField>
+        <AdminField label="Année de création" note="Utilisée dans le SEO JSON-LD">
+          <input className="bl-admin-input" type="number" min="1900" max="2099" placeholder="2019" value={form.since} onChange={e => set("since", e.target.value)} />
+        </AdminField>
+        <AdminField label="Fourchette de prix" note="Affiché dans les résultats Google">
+          <select className="bl-admin-input" value={form.priceRange} onChange={e => set("priceRange", e.target.value)}>
+            <option value="€">€ — Économique</option>
+            <option value="€€">€€ — Milieu de gamme</option>
+            <option value="€€€">€€€ — Haut de gamme</option>
+            <option value="€€€€">€€€€ — Luxe</option>
+          </select>
         </AdminField>
       </div>
 
@@ -356,16 +378,46 @@ function ProductForm({ initial, onSave, onCancel }) {
 // ── Contact Section ───────────────────────────────────────────────────────────
 function ContactSection({ tenant, onSave }) {
   const [form, setForm] = useState({
-    email:      tenant.contact?.email || "",
-    phone:      tenant.contact?.phone || "",
-    address_fr: tenant.contact?.address?.fr || "",
-    address_en: tenant.contact?.address?.en || "",
+    email:         tenant.contact?.email || "",
+    phone:         tenant.contact?.phone || "",
+    address_fr:    tenant.contact?.address?.fr || "",
+    address_en:    tenant.contact?.address?.en || "",
+    streetAddress: tenant.contact?.streetAddress || "",
+    city:          tenant.contact?.city || "",
+    postalCode:    tenant.contact?.postalCode || "",
+    countryCode:   tenant.contact?.countryCode || "BE",
+    openingHours:  (tenant.contact?.openingHours || ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"]).join("\n"),
+    instagram:     tenant.contact?.socialLinks?.instagram || "",
+    facebook:      tenant.contact?.socialLinks?.facebook  || "",
+    tiktok:        tenant.contact?.socialLinks?.tiktok    || "",
+    youtube:       tenant.contact?.socialLinks?.youtube   || "",
   });
   const [saved, setSaved] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSave = () => {
-    onSave({ contact: { email: form.email, phone: form.phone, address: { fr: form.address_fr, en: form.address_en } } });
+    const openingHoursArr = form.openingHours
+      .split("\n")
+      .map(s => s.trim())
+      .filter(Boolean);
+    onSave({
+      contact: {
+        email:         form.email,
+        phone:         form.phone,
+        address:       { fr: form.address_fr, en: form.address_en },
+        streetAddress: form.streetAddress,
+        city:          form.city,
+        postalCode:    form.postalCode,
+        countryCode:   form.countryCode,
+        openingHours:  openingHoursArr,
+        socialLinks: {
+          instagram: form.instagram,
+          facebook:  form.facebook,
+          tiktok:    form.tiktok,
+          youtube:   form.youtube,
+        },
+      },
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -373,12 +425,47 @@ function ContactSection({ tenant, onSave }) {
   return (
     <div className="bl-admin-section">
       <h2 className="bl-admin-section-title">Informations de contact</h2>
+
+      <h3 className="bl-admin-subsection">Coordonnées principales</h3>
       <div className="bl-admin-grid">
         <AdminField label="Email" required><input className="bl-admin-input" type="email" value={form.email} onChange={e => set("email", e.target.value)} /></AdminField>
         <AdminField label="Téléphone"><input className="bl-admin-input" value={form.phone} onChange={e => set("phone", e.target.value)} /></AdminField>
-        <AdminField label="Adresse 🇫🇷"><input className="bl-admin-input" value={form.address_fr} onChange={e => set("address_fr", e.target.value)} /></AdminField>
-        <AdminField label="Adresse 🇬🇧"><input className="bl-admin-input" value={form.address_en} onChange={e => set("address_en", e.target.value)} /></AdminField>
+        <AdminField label="Adresse affichée 🇫🇷"><input className="bl-admin-input" value={form.address_fr} onChange={e => set("address_fr", e.target.value)} /></AdminField>
+        <AdminField label="Adresse affichée 🇬🇧"><input className="bl-admin-input" value={form.address_en} onChange={e => set("address_en", e.target.value)} /></AdminField>
       </div>
+
+      <h3 className="bl-admin-subsection">Adresse structurée (SEO)</h3>
+      <p style={{ fontSize:"12px", color:"rgba(247,242,235,0.45)", marginBottom:"16px", lineHeight:1.5 }}>
+        Utilisée dans le JSON-LD (Google My Business / Rich Results).
+      </p>
+      <div className="bl-admin-grid">
+        <AdminField label="Rue & numéro"><input className="bl-admin-input" placeholder="Rue du Bailli 12" value={form.streetAddress} onChange={e => set("streetAddress", e.target.value)} /></AdminField>
+        <AdminField label="Ville"><input className="bl-admin-input" placeholder="Bruxelles" value={form.city} onChange={e => set("city", e.target.value)} /></AdminField>
+        <AdminField label="Code postal"><input className="bl-admin-input" placeholder="1050" value={form.postalCode} onChange={e => set("postalCode", e.target.value)} /></AdminField>
+        <AdminField label="Code pays (ISO 3166-1 α-2)">
+          <input className="bl-admin-input" placeholder="BE" maxLength={2} value={form.countryCode} onChange={e => set("countryCode", e.target.value.toUpperCase())} />
+        </AdminField>
+      </div>
+
+      <h3 className="bl-admin-subsection">Horaires d'ouverture</h3>
+      <AdminField label="Horaires" note="Un horaire par ligne, format : Mo-Fr 09:00-18:00">
+        <textarea
+          className="bl-admin-input"
+          rows={4}
+          value={form.openingHours}
+          onChange={e => set("openingHours", e.target.value)}
+          placeholder={"Mo-Fr 09:00-18:00\nSa 10:00-14:00"}
+        />
+      </AdminField>
+
+      <h3 className="bl-admin-subsection">Réseaux sociaux</h3>
+      <div className="bl-admin-grid">
+        <AdminField label="Instagram (URL complète)"><input className="bl-admin-input" placeholder="https://instagram.com/votre-compte" value={form.instagram} onChange={e => set("instagram", e.target.value)} /></AdminField>
+        <AdminField label="Facebook (URL complète)"><input className="bl-admin-input" placeholder="https://facebook.com/votre-page" value={form.facebook} onChange={e => set("facebook", e.target.value)} /></AdminField>
+        <AdminField label="TikTok (URL complète)"><input className="bl-admin-input" placeholder="https://tiktok.com/@votre-compte" value={form.tiktok} onChange={e => set("tiktok", e.target.value)} /></AdminField>
+        <AdminField label="YouTube (URL complète)"><input className="bl-admin-input" placeholder="https://youtube.com/@votre-chaine" value={form.youtube} onChange={e => set("youtube", e.target.value)} /></AdminField>
+      </div>
+
       <SaveBar onSave={handleSave} saved={saved} />
     </div>
   );
@@ -854,6 +941,185 @@ function LegalSection({ tenant, onSave }) {
   );
 }
 
+// ── Analytics Section ─────────────────────────────────────────────────────────
+function AnalyticsSection({ tenant, onSave }) {
+  const [form, setForm] = useState({
+    provider:       tenant.analytics?.provider || "",
+    plausibleDomain: tenant.analytics?.plausibleDomain || "",
+    ga4Id:          tenant.analytics?.ga4Id || "",
+  });
+  const [saved, setSaved] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSave = () => {
+    onSave({
+      analytics: {
+        provider:        form.provider || null,
+        plausibleDomain: form.plausibleDomain,
+        ga4Id:           form.ga4Id,
+      },
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="bl-admin-section">
+      <h2 className="bl-admin-section-title">Analytics</h2>
+      <p style={{ color:"rgba(247,242,235,0.5)", fontSize:"13px", marginBottom:"24px", lineHeight:1.6 }}>
+        Les données ne sont collectées qu'après consentement du visiteur (bannière cookies).
+        Choisissez un seul fournisseur — Plausible est recommandé pour la conformité RGPD sans DPA.
+      </p>
+
+      <AdminField label="Fournisseur Analytics">
+        <select className="bl-admin-input" value={form.provider} onChange={e => set("provider", e.target.value)}>
+          <option value="">Aucun (désactivé)</option>
+          <option value="plausible">Plausible Analytics — privacy-first, pas de cookies</option>
+          <option value="ga4">Google Analytics 4 — avec cookies tiers</option>
+        </select>
+      </AdminField>
+
+      {form.provider === "plausible" && (
+        <div style={{ marginTop:"20px" }}>
+          <AdminField label="Domaine Plausible" note="Ex : barbaluxe.be (sans https://)">
+            <input
+              className="bl-admin-input"
+              placeholder="votre-domaine.be"
+              value={form.plausibleDomain}
+              onChange={e => set("plausibleDomain", e.target.value)}
+            />
+          </AdminField>
+          <div style={{ marginTop:"12px", background:"rgba(46,204,113,0.06)", border:"1px solid rgba(46,204,113,0.2)", borderRadius:"6px", padding:"14px 16px", fontSize:"12px", color:"rgba(247,242,235,0.6)", lineHeight:1.7 }}>
+            ✅ <strong>Plausible</strong> est conforme RGPD sans bannière de consentement requise pour les données agrégées.
+            Vous n'avez pas besoin d'un DPD désigné ni d'une DPA avec Plausible.
+            <br />Créez votre compte sur <strong>plausible.io</strong> et ajoutez votre domaine.
+          </div>
+        </div>
+      )}
+
+      {form.provider === "ga4" && (
+        <div style={{ marginTop:"20px" }}>
+          <AdminField label="ID de mesure GA4" note="Format : G-XXXXXXXXXX">
+            <input
+              className="bl-admin-input"
+              placeholder="G-XXXXXXXXXX"
+              value={form.ga4Id}
+              onChange={e => set("ga4Id", e.target.value)}
+            />
+          </AdminField>
+          <div style={{ marginTop:"12px", background:"rgba(201,169,110,0.06)", border:"1px solid rgba(201,169,110,0.2)", borderRadius:"6px", padding:"14px 16px", fontSize:"12px", color:"rgba(247,242,235,0.6)", lineHeight:1.7 }}>
+            ⚠️ <strong>Google Analytics 4</strong> requiert un consentement explicite (RGPD, Art. 6).
+            La bannière cookies de la boutique gère ce consentement. Assurez-vous d'avoir :
+            <br />• Une politique de confidentialité mentionnant GA4 et Google Ireland Ltd.
+            <br />• Un DPA signé avec Google (<em>Data Processing Amendment</em>).
+            <br />• La gestion des droits d'accès / suppression des données.
+          </div>
+        </div>
+      )}
+
+      <SaveBar onSave={handleSave} saved={saved} />
+    </div>
+  );
+}
+
+// ── Audit Section ─────────────────────────────────────────────────────────────
+function AuditSection() {
+  const [log, setLog] = useState([]);
+  const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    setLog(readAuditLog());
+  }, []);
+
+  const ACTION_LABELS = {
+    save:     { icon: "💾", label: "Modification admin" },
+    order:    { icon: "🛒", label: "Commande" },
+    login:    { icon: "🔑", label: "Connexion admin" },
+    logout:   { icon: "🚪", label: "Déconnexion admin" },
+    password: { icon: "🔒", label: "Changement mot de passe" },
+  };
+
+  const types = ["all", ...new Set(log.map(e => e.action))];
+  const visible = filter === "all" ? log : log.filter(e => e.action === filter);
+
+  const handleClear = () => {
+    if (!confirm("Effacer tout le journal d'audit ? Cette action est irréversible.")) return;
+    try { localStorage.removeItem("bl_audit_log"); } catch {}
+    setLog([]);
+  };
+
+  return (
+    <div className="bl-admin-section">
+      <h2 className="bl-admin-section-title">Journal d'audit</h2>
+      <p style={{ color:"rgba(247,242,235,0.5)", fontSize:"13px", marginBottom:"20px", lineHeight:1.6 }}>
+        Enregistre les actions admin, les commandes et les connexions. Stocké localement — 200 entrées max.
+      </p>
+
+      <div style={{ display:"flex", gap:"8px", flexWrap:"wrap", marginBottom:"20px", alignItems:"center" }}>
+        {types.map(t => (
+          <button
+            key={t}
+            onClick={() => setFilter(t)}
+            style={{
+              padding:"5px 12px", borderRadius:"20px", fontSize:"11px", cursor:"pointer",
+              background: filter === t ? "var(--gold)" : "rgba(201,169,110,0.1)",
+              color: filter === t ? "var(--night)" : "rgba(247,242,235,0.7)",
+              border: filter === t ? "none" : "1px solid rgba(201,169,110,0.25)",
+              fontWeight: filter === t ? 600 : 400,
+              transition: "all 0.15s",
+            }}
+          >
+            {t === "all" ? `Tout (${log.length})` : `${ACTION_LABELS[t]?.icon || "📋"} ${ACTION_LABELS[t]?.label || t} (${log.filter(e => e.action === t).length})`}
+          </button>
+        ))}
+        <button
+          onClick={handleClear}
+          style={{ marginLeft:"auto", padding:"5px 12px", borderRadius:"4px", fontSize:"11px", cursor:"pointer", background:"transparent", border:"1px solid rgba(226,75,74,0.35)", color:"rgba(226,75,74,0.7)" }}
+        >
+          Effacer le journal
+        </button>
+      </div>
+
+      {visible.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"48px", border:"1px dashed rgba(201,169,110,0.2)", borderRadius:"8px", color:"rgba(247,242,235,0.35)" }}>
+          <div style={{ fontSize:"36px", marginBottom:"12px" }}>📋</div>
+          <p>Aucune entrée dans le journal.</p>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
+          {[...visible].reverse().map((entry, i) => {
+            const meta = ACTION_LABELS[entry.action] || { icon: "📋", label: entry.action };
+            const detail = entry.detail || {};
+            return (
+              <div key={i} style={{ display:"flex", gap:"14px", alignItems:"flex-start", padding:"10px 14px", background:"rgba(247,242,235,0.025)", border:"1px solid rgba(201,169,110,0.1)", borderRadius:"6px" }}>
+                <span style={{ fontSize:"18px", flexShrink:0, marginTop:"1px" }}>{meta.icon}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", gap:"10px", alignItems:"baseline", flexWrap:"wrap" }}>
+                    <span style={{ fontSize:"13px", color:"#f7f2eb", fontWeight:500 }}>{meta.label}</span>
+                    {entry.action === "order" && detail.items && (
+                      <span style={{ fontSize:"11px", color:"rgba(247,242,235,0.45)" }}>
+                        {detail.items.map(it => `${it.name} ×${it.qty}`).join(", ")}
+                      </span>
+                    )}
+                    {entry.action === "save" && detail.keys && (
+                      <span style={{ fontSize:"11px", color:"rgba(247,242,235,0.45)" }}>
+                        {detail.keys.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize:"11px", color:"rgba(247,242,235,0.3)", marginTop:"3px" }}>
+                    {new Date(entry.ts).toLocaleString("fr-BE", { dateStyle:"short", timeStyle:"short" })}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Inactivity logout (30 min) ────────────────────────────────────────────────
 const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -928,16 +1194,18 @@ export default function AdminPage({ setPage }) {
 
       {/* Content */}
       <main className="bl-admin-main" style={{ paddingBottom: !useKV ? "48px" : undefined }}>
-        {tab === "identity" && <IdentitySection tenant={tenant} onSave={saveTenant} />}
-        {tab === "theme"    && <ThemeSection tenant={tenant} onSave={saveTenant} />}
-        {tab === "products" && <ProductsSection tenant={tenant} onSave={saveTenant} isPro={isPro} productLimit={productLimit} />}
-        {tab === "contact"  && <ContactSection tenant={tenant} onSave={saveTenant} />}
-        {tab === "shipping" && <ShippingSection tenant={tenant} onSave={saveTenant} />}
-        {tab === "payments" && <PaymentsSection tenant={tenant} useKV={useKV} />}
-        {tab === "orders"   && <OrdersSection useKV={useKV} />}
-        {tab === "legal"    && <LegalSection tenant={tenant} onSave={saveTenant} />}
-        {tab === "password" && <PasswordSection />}
-        {tab === "plan"     && <PlanSection tenant={tenant} isPro={isPro} onSave={saveTenant} resetTenant={resetTenant} />}
+        {tab === "identity"  && <IdentitySection tenant={tenant} onSave={saveTenant} />}
+        {tab === "theme"     && <ThemeSection tenant={tenant} onSave={saveTenant} />}
+        {tab === "products"  && <ProductsSection tenant={tenant} onSave={saveTenant} isPro={isPro} productLimit={productLimit} />}
+        {tab === "contact"   && <ContactSection tenant={tenant} onSave={saveTenant} />}
+        {tab === "shipping"  && <ShippingSection tenant={tenant} onSave={saveTenant} />}
+        {tab === "payments"  && <PaymentsSection tenant={tenant} useKV={useKV} />}
+        {tab === "analytics" && <AnalyticsSection tenant={tenant} onSave={saveTenant} />}
+        {tab === "orders"    && <OrdersSection useKV={useKV} />}
+        {tab === "legal"     && <LegalSection tenant={tenant} onSave={saveTenant} />}
+        {tab === "password"  && <PasswordSection />}
+        {tab === "audit"     && <AuditSection />}
+        {tab === "plan"      && <PlanSection tenant={tenant} isPro={isPro} onSave={saveTenant} resetTenant={resetTenant} />}
       </main>
     </div>
   );

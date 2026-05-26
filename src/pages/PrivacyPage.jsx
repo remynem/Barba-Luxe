@@ -29,15 +29,27 @@ const content = {
       },
       {
         h: "6. Vos droits",
-        p: "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation, de portabilité et d'opposition. Pour exercer ces droits, contactez-nous à remy@ish-group.eu. Vous pouvez également introduire une réclamation auprès de l'Autorité de protection des données belge (APD) : www.autoriteprotectiondonnees.be.",
+        p: "Conformément au RGPD (art. 15–22), vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation, de portabilité et d'opposition. Les demandes reçoivent une réponse dans un délai de 30 jours. Contactez-nous à remy@ish-group.eu. Vous pouvez également introduire une réclamation auprès de l'Autorité de protection des données belge (APD) : www.autoriteprotectiondonnees.be.",
       },
       {
-        h: "7. Cookies",
-        p: "Ce site utilise uniquement des cookies techniques strictement nécessaires au fonctionnement (session, panier). Aucun cookie publicitaire ou analytique tiers n'est déposé sans votre consentement explicite.",
+        h: "7. Cookies et traceurs",
+        p: "Ce site utilise des cookies techniques strictement nécessaires (session, panier). Si vous acceptez les cookies via notre bannière de consentement, des outils d'analyse de trafic peuvent être activés (voir ci-dessous). Aucun cookie publicitaire tiers n'est déposé sans votre consentement explicite. Vous pouvez retirer votre consentement à tout moment en vidant les données de votre navigateur.",
       },
       {
-        h: "8. Transferts hors UE",
-        p: "Stripe Inc. est établie aux États-Unis. Le transfert est encadré par les clauses contractuelles types de la Commission européenne et le Data Privacy Framework UE-États-Unis.",
+        h: "8. Analytics et mesure d'audience",
+        p: "__ANALYTICS_FR__",
+      },
+      {
+        h: "9. Transferts hors UE",
+        p: "Stripe Inc. est établie aux États-Unis. Le transfert est encadré par les clauses contractuelles types (CCT) de la Commission européenne et le Data Privacy Framework UE-États-Unis. Si Google Analytics est activé, Google Ireland Ltd. (responsable pour l'UE) traite les données en vertu d'un accord de traitement des données (DPA).",
+      },
+      {
+        h: "10. Délégué à la protection des données (DPD)",
+        p: "Notre activité de traitement ne dépasse pas les seuils rendant la désignation d'un DPD obligatoire (RGPD, art. 37). Pour toute question relative à la protection de vos données, contactez-nous directement à remy@ish-group.eu.",
+      },
+      {
+        h: "11. Registre des activités de traitement",
+        p: "Conformément à l'art. 30 du RGPD, nous tenons un registre interne des activités de traitement. Ce registre est disponible sur demande auprès de remy@ish-group.eu.",
       },
     ],
   },
@@ -67,15 +79,27 @@ const content = {
       },
       {
         h: "6. Your Rights",
-        p: "Under GDPR you have the right to access, rectify, erase, restrict, port, and object to processing. Contact us at remy@ish-group.eu. You may also lodge a complaint with the Belgian Data Protection Authority (APD): www.dataprotectionauthority.be.",
+        p: "Under GDPR (Art. 15–22) you have the right to: access your data, rectify inaccuracies, request erasure, restrict or object to processing, and data portability. Requests are answered within 30 days. Contact us at remy@ish-group.eu. You may also lodge a complaint with the Belgian Data Protection Authority (APD): www.dataprotectionauthority.be.",
       },
       {
-        h: "7. Cookies",
-        p: "This site uses only strictly necessary technical cookies (session, cart). No third-party advertising or analytics cookies are set without your explicit consent.",
+        h: "7. Cookies and Trackers",
+        p: "This site uses strictly necessary technical cookies (session, cart). If you accept cookies via our consent banner, traffic analytics may be enabled (see below). No third-party advertising cookies are set without your explicit consent. You may withdraw consent at any time by clearing your browser data.",
       },
       {
-        h: "8. Transfers Outside the EU",
-        p: "Stripe Inc. is established in the United States. The transfer is governed by the European Commission's standard contractual clauses and the EU-US Data Privacy Framework.",
+        h: "8. Analytics and Audience Measurement",
+        p: "__ANALYTICS_EN__",
+      },
+      {
+        h: "9. Transfers Outside the EU",
+        p: "Stripe Inc. is established in the United States. Transfers are governed by the European Commission's Standard Contractual Clauses (SCCs) and the EU-US Data Privacy Framework. If Google Analytics is active, Google Ireland Ltd. (EU controller) processes data under a signed Data Processing Addendum (DPA).",
+      },
+      {
+        h: "10. Data Protection Officer (DPO)",
+        p: "Our processing activities do not exceed the thresholds requiring mandatory DPO designation (GDPR Art. 37). For any data-protection questions, contact us directly at remy@ish-group.eu.",
+      },
+      {
+        h: "11. Records of Processing Activities",
+        p: "In accordance with GDPR Art. 30, we maintain an internal record of processing activities. This record is available on request at remy@ish-group.eu.",
       },
     ],
   },
@@ -88,6 +112,20 @@ export default function PrivacyPage({ lang, setPage }) {
   const address     = legal.address     || "Rue du Bailli 12, 1050 Bruxelles, Belgique";
   const email       = legal.email       || tenant?.contact?.email || "remy@ish-group.eu";
   const vatNumber   = legal.vatNumber   || "BE 0000.000.000";
+  const analytics   = tenant?.analytics || {};
+
+  // Dynamic analytics description
+  const analyticsFr = analytics.provider === "plausible"
+    ? `Nous utilisons Plausible Analytics (plausible.io), un outil de mesure d'audience respectueux de la vie privée qui ne dépose aucun cookie et ne collecte aucune donnée personnelle identifiable. Aucun transfert hors UE. Aucun consentement préalable requis selon les lignes directrices de la CNIL.`
+    : analytics.provider === "ga4"
+    ? `Nous utilisons Google Analytics 4 (GA4) pour mesurer l'audience de ce site. GA4 est fourni par Google Ireland Ltd. (Gordon House, Barrow Street, Dublin 4, Irlande). Des cookies analytiques sont déposés avec votre consentement. Les données collectées (pages visitées, durée, appareil) sont anonymisées (IP masquée). Vous pouvez refuser ce traitement via notre bannière ou en installant le module complémentaire de désactivation GA : tools.google.com/dlpage/gaoptout.`
+    : `Ce site ne collecte actuellement aucune donnée analytique. Aucun cookie de mesure d'audience n'est déposé.`;
+
+  const analyticsEn = analytics.provider === "plausible"
+    ? `We use Plausible Analytics (plausible.io), a privacy-first audience measurement tool that sets no cookies and collects no personally identifiable information. No transfer outside the EU. No prior consent required.`
+    : analytics.provider === "ga4"
+    ? `We use Google Analytics 4 (GA4) to measure website traffic. GA4 is provided by Google Ireland Ltd. (Gordon House, Barrow Street, Dublin 4, Ireland). Analytics cookies are only set with your consent. Collected data (pages visited, duration, device) is anonymised (IP masking). You can opt out via our cookie banner or by installing the GA opt-out add-on: tools.google.com/dlpage/gaoptout.`
+    : `This site currently collects no analytics data. No audience measurement cookies are set.`;
 
   // Replace placeholder values dynamically
   const hydrate = (text) => text
@@ -95,7 +133,9 @@ export default function PrivacyPage({ lang, setPage }) {
     .replace(/Barba Luxe/g,        shopName)
     .replace(/Rue du Bailli 12, 1050 Bruxelles, Belgique/g, address)
     .replace(/remy@ish-group\.eu/g, email)
-    .replace(/BE 0000\.000\.000/g,  vatNumber);
+    .replace(/BE 0000\.000\.000/g,  vatNumber)
+    .replace(/__ANALYTICS_FR__/g, analyticsFr)
+    .replace(/__ANALYTICS_EN__/g, analyticsEn);
 
   const raw = content[lang] || content.fr;
   const t   = { ...raw, sections: raw.sections.map(s => ({ h: s.h, p: hydrate(s.p) })) };

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { CONFIG, ConfigContext } from "./data/config.js";
 import { TenantProvider, useTenant } from "./contexts/TenantContext.jsx";
 import { useSEO } from "./hooks/useSEO.js";
+import Analytics, { trackPageView } from "./components/Analytics.jsx";
 import { loadAdSense } from "./components/AdBanner.jsx";
 import Nav from "./components/Nav.jsx";
 import CartDrawer from "./components/CartDrawer.jsx";
@@ -168,6 +169,9 @@ function AppInner() {
   // SEO: dynamic <head> meta, OG, JSON-LD — runs after mergedConfig is built
   useSEO({ page, lang, tenant, config: mergedConfig });
 
+  // Track SPA page-views when page changes
+  useEffect(() => { trackPageView(page); }, [page]);
+
   if (!loaded) return (
     <div style={{ minHeight:"100vh", background:"var(--night)", display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div style={{ fontFamily:"Georgia,serif", color:"var(--gold)", fontSize:"22px" }}>Barba <em>Luxe</em></div>
@@ -187,6 +191,7 @@ function AppInner() {
 
   return (
     <ConfigContext.Provider value={{ config: mergedConfig, toggleFlag, prefillMessage, setPrefillMessage }}>
+      <Analytics tenant={tenant} />
       <OfflineBanner lang={lang} />
       <div className="bl-app">
         {!noNavPages.includes(page) && (

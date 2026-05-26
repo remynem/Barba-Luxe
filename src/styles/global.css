@@ -377,6 +377,22 @@ a { text-decoration: none; color: inherit; }
   .bl-success-title { font-size: 28px; }
   /* Pricing cards full width */
   .bl-pricing-cards { flex-direction: column; align-items: center; }
+  /* Prevent iOS Safari from zooming inputs on focus (requires font-size ≥ 16px) */
+  .bl-form-input,
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="number"],
+  select,
+  textarea { font-size: 16px !important; }
+  /* Ensure tap targets meet WCAG 2.5.5 minimum (44×44 px) */
+  .bl-filter-btn,
+  .bl-add-btn,
+  .bl-btn-back,
+  .bl-nav-link,
+  .bl-lang-btn,
+  .bl-cart-btn { min-height: 44px; display: inline-flex; align-items: center; }
 }
 
 /* ── ADMIN PANEL ─────────────────────────────────────────────────────────────── */
